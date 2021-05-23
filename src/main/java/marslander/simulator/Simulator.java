@@ -204,13 +204,13 @@ public class Simulator {
         int rotate = capsule.getRotate();
         int power = capsule.getPower();
 
-        double theta = 90.0 - Math.abs(rotate);
-        double powerVectorX = Math.cos(theta) * power;
+        double theta = Math.toRadians(90.0 - Math.abs(rotate));
+        double powerVectorX = Math.cos(theta) * power * (rotate < 0 ? 1 : -1);
         double powerVectorY = Math.sin(theta) * power;
         double newVSpeed = vSpeed + (MARS_GRAVITY + powerVectorY) * TURN_DURATION;
         double newHSpeed = hSpeed + powerVectorX * TURN_DURATION;
         double yDisplacement = vSpeed + 0.5 * (MARS_GRAVITY + powerVectorY) * Math.pow(TURN_DURATION, 2);
-        double xDisplacement = hSpeed * TURN_DURATION;
+        double xDisplacement = hSpeed + 0.5 * powerVectorX;
 
         capsule.sethSpeed(newHSpeed);
         capsule.setvSpeed(newVSpeed);
