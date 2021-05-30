@@ -1,5 +1,7 @@
 package marslander.math;
 
+import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
 
 public class Point {
@@ -21,6 +23,16 @@ public class Point {
         vector.scale(length);
         vector.add(origin);
         return new Point(vector.getX(), vector.getY());
+    }
+
+    public static double distance(Point a, Point b) {
+        return Math.sqrt(Math.pow(a.getX() - b.getX(), 2) + Math.pow(a.getY() - b.getY(), 2));
+    }
+
+    public Point findNearestPoint(List<Point> points) {
+        return points.stream()
+                .min(Comparator.comparingDouble(point -> distance(this, point)))
+                .orElse(null);
     }
 
     public double getX() {
@@ -55,8 +67,8 @@ public class Point {
     @Override
     public String toString() {
         return "Point{" +
-                "x=" + x +
-                ", y=" + y +
+                "x=" + Math.round(x) +
+                ", y=" + Math.round(y) +
                 '}';
     }
 }

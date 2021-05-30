@@ -1,4 +1,4 @@
-package marslander;
+package marslander.core;
 
 import marslander.math.Point;
 
@@ -9,6 +9,17 @@ public class Capsule {
     private double fuel;
     private int rotate;
     private int power;
+    private LandingState landingState;
+
+    public Capsule(Capsule capsule) {
+        this.position = new Point(capsule.getPosition().getX(), capsule.getPosition().getY());
+        this.hSpeed = capsule.hSpeed;
+        this.vSpeed = capsule.vSpeed;
+        this.fuel = capsule.fuel;
+        this.rotate = capsule.rotate;
+        this.power = capsule.power;
+        this.landingState = capsule.landingState;
+    }
 
     public Capsule(int x, int y, double hSpeed, double vSpeed, double fuel, int rotate, int power) {
         this.position = new Point(x, y);
@@ -17,6 +28,7 @@ public class Capsule {
         this.fuel = fuel;
         this.rotate = rotate;
         this.power = power;
+        this.landingState = LandingState.STILL_FLYING;
     }
 
     public Point getPosition() {
@@ -67,6 +79,14 @@ public class Capsule {
         this.power = power;
     }
 
+    public LandingState getLandingState() {
+        return landingState;
+    }
+
+    public void setLandingState(LandingState landingState) {
+        this.landingState = landingState;
+    }
+
     @Override
     public String toString() {
         return "Capsule{" +
@@ -76,6 +96,7 @@ public class Capsule {
                 ", fuel=" + fuel +
                 ", rotate=" + rotate +
                 ", power=" + power +
+                ", landingState=" + landingState +
                 '}';
     }
 }

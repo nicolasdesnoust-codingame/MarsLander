@@ -37,11 +37,8 @@ public class Line {
     public static Line getBisectingLine(Point a, Point b, Point c) {
         Point p1 = Point.getPointOnLine(b, a, 10);
         Point p2 = Point.getPointOnLine(b, c, 10);
-        System.err.println("Bisecting line P1: " + p1);
-        System.err.println("Bisecting line P2: " + p2);
 
         Point p3 = new Segment(p1, p2).getMiddle();
-        System.err.println("Bisecting line P3: " + p3);
 
         return computeLineEquation(b, p3);
     }

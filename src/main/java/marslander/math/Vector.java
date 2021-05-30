@@ -55,6 +55,10 @@ public class Vector {
         return Objects.hash(x, y);
     }
 
+    public double dot(Vector other) {
+        return other.x * x + other.y * y;
+    }
+
     public void normalize() {
         double magnitude = getLength();
         x /= magnitude;

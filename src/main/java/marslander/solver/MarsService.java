@@ -1,12 +1,13 @@
-package marslander;
+package marslander.solver;
 
+import marslander.core.Mars;
 import marslander.math.Point;
 import marslander.math.Segment;
 
 import java.util.List;
 
 public class MarsService {
-    public Segment getLandingArea(Mars mars) {
+    public Segment findLandingArea(Mars mars) {
         List<Point> surface = mars.getSurface();
         Point lastPoint = surface.get(0);
 

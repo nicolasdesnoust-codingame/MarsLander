@@ -25,7 +25,7 @@ public class Segment {
         Line line2 = Line.computeLineEquation(otherSegment);
 
         Optional<Point> pointOptional = Line.calculateIntersectionPoint(line1, line2);
-        if(pointOptional.isPresent()) {
+        if (pointOptional.isPresent()) {
             Point intersection = pointOptional.get();
             double thisMinX = Double.min(this.p1.getX(), this.p2.getX());
             double thisMaxX = Double.max(this.p1.getX(), this.p2.getX());
@@ -76,5 +76,22 @@ public class Segment {
                 "a=" + p1 +
                 ", b=" + p2 +
                 '}';
+    }
+
+    public double distanceTo(Point point) {
+        Vector p1Point = new Vector(p1, point);
+        Vector p1p2 = new Vector(p1, p2);
+        double t = p1Point.dot(p1p2) / Math.pow(p1p2.getLength(), 2);
+
+        if (t < 0 || t > 1) {
+            t = Math.min(Math.max(0, t), 1);
+        }
+
+        Point pointOrthogonalProjection = new Point(
+                p1.getX() + p1p2.getX() * t,
+                p1.getY() + p1p2.getY() * t
+        );
+        Vector distanceVector = new Vector(point, pointOrthogonalProjection);
+        return distanceVector.getLength();
     }
 }
