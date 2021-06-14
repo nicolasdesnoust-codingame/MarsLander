@@ -1,0 +1,36 @@
+
+@import '~@angular/material/theming';
+@import 'dark-theme';
+
+/* Application d'un thème aux éléments HTML natifs */
+@mixin native-element-theme($theme, $name) {
+  $accent: map-get($theme, accent);
+  $primary: map-get($theme, primary);
+  $background: map-get($theme, background);
+  $foreground: map-get($theme, foreground);
+  $is-dark: map-get($theme, is-dark);
+}
+
+/**
+ * Applique un thème :
+ * - aux composants de la librairie angular material design
+ * - aux éléments natifs du HTML (a, ul, li, ...)
+ * - aux composants de ce projet
+ */
+@mixin theme($theme, $name) {
+  .#{$name}-theme {
+    @include angular-material-theme($theme);
+    @include native-element-theme($theme, $name);
+
+    //* Inclure ici les mixins de chaque composant ayant un thème
+
+  }
+}
+
+@mixin material-core($font-family) {
+  $mat-typography: mat-typography-config($font-family);
+  @include mat-core($mat-typography); //! A inclure une seule fois
+}
+
+@include material-core($font-family);
+@include theme($dark-theme, 'dark');
