@@ -1,0 +1,47 @@
+// Color palettes.
+$dark-primary: mat-palette($mat-teal, 600, A100, A400);
+$dark-accent: mat-palette($mat-teal, 600, A100, A400);
+$dark-warn: mat-palette($mat-red);
+
+// Background palette.
+$custom-dark-theme-background: (
+  code: #161b22,
+  code-block: #161b22,
+  status-bar: black,
+  app-bar: #161b22,
+  background: #0d1117,
+  login-background: #2a2d35,
+  hover: rgba(white, 0.04),
+  card: #161922,
+  dialog: #161b22,
+  disabled-button: rgba(white, 0.12),
+  raised-button: map-get($mat-grey, 800),
+  focused-button: $light-focused,
+  selected-button: map_get($mat-grey, 900),
+  selected-disabled-button: map_get($mat-grey, 800),
+  disabled-button-toggle: black,
+  unselected-chip: map_get($mat-grey, 700),
+  disabled-list-option: black,
+  tooltip: map_get($mat-grey, 700),
+);
+
+// Foreground palette.
+$custom-dark-theme-foreground: (
+  secondary-text: #8b949e,
+  text: #c9d1d9
+);
+
+$dark-theme: mat-dark-theme($dark-primary, $dark-accent, $dark-warn);
+
+// Remplacement des palettes par défaut
+$background: map-get($dark-theme, background);
+$foreground: map-get($dark-theme, foreground);
+$background: map_merge($background, $custom-dark-theme-background);
+$foreground: map-merge($foreground, $custom-dark-theme-foreground);
+$dark-theme: map_merge(
+  $dark-theme,
+  (
+    background: $background,
+    foreground: $foreground,
+  )
+);
