@@ -1,12 +1,10 @@
 package io.github.nicolasdesnoust.marslander.solver;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import io.github.nicolasdesnoust.marslander.core.Capsule;
 import io.github.nicolasdesnoust.marslander.core.InitialGameState;
-import io.github.nicolasdesnoust.marslander.core.Mars;
 import io.github.nicolasdesnoust.marslander.math.Line;
 import io.github.nicolasdesnoust.marslander.math.Point;
 import io.github.nicolasdesnoust.marslander.math.Segment;
@@ -15,18 +13,17 @@ public class PathFinder {
     //private static final Logger log = LoggerFactory.getLogger(PathFinder.class);
 
     public List<Point> findPath(Capsule capsule, InitialGameState initialGameState) {
-    	Mars mars = initialGameState.getMars();
-        Segment landingArea = initialGameState.getLandingArea();
-
     	List<Point> path = buildStraightPath(capsule, initialGameState);
 
         Segment currentPathSegment = new Segment(path.get(0), path.get(1));
-        List<Segment> marsSurface = new ArrayList<>(mars.getSurface());
+        List<Segment> marsSurface;
+        Segment landingArea;
         if (currentPathSegment.getP1().getX() > currentPathSegment.getP2().getX()) {
-            Collections.reverse(marsSurface); // ne fonctionne plus !
-            Point p1 = landingArea.getP1();
-            landingArea.setP1(landingArea.getP2());
-            landingArea.setP2(p1);
+        	marsSurface = initialGameState.getMarsSurfaceReversed();
+        	landingArea = initialGameState.getLandingAreaReversed();
+        } else {
+        	marsSurface = initialGameState.getMars().getSurface();
+        	landingArea = initialGameState.getLandingArea();
         }
 
         for (int i = 0; i < marsSurface.size(); i++) {
