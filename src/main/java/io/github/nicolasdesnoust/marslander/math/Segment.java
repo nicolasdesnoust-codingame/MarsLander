@@ -94,4 +94,8 @@ public class Segment {
         Vector distanceVector = new Vector(point, pointOrthogonalProjection);
         return distanceVector.getLength();
     }
+    
+    public boolean isHorizontal() {
+    	return p1.getY() == p2.getY();
+    }
 }

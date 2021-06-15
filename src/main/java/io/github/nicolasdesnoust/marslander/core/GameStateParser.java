@@ -20,9 +20,12 @@ public class GameStateParser {
 
     public InitialGameState parseInitialGameState(Scanner in) {
         int surfaceSize = in.nextInt();
-        List<Point> marsSurface = new ArrayList<>(surfaceSize);
-        for (int i = 0; i < surfaceSize; i++) {
-            marsSurface.add(new Point(in.nextInt(), in.nextInt()));
+        List<Segment> marsSurface = new ArrayList<>(surfaceSize);
+        Point previousPoint = new Point(in.nextInt(), in.nextInt());
+        for (int i = 1; i < surfaceSize; i++) {
+        	Point currentPoint = new Point(in.nextInt(), in.nextInt());
+            marsSurface.add(new Segment(previousPoint, currentPoint));
+            previousPoint = currentPoint;
         }
 
         Capsule initialCapsule = parseCurrentTurnState(in);

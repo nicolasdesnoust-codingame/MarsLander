@@ -1,18 +1,18 @@
 package io.github.nicolasdesnoust.marslander.core;
 
-import io.github.nicolasdesnoust.marslander.math.Point;
-
 import java.util.Collections;
 import java.util.List;
 
-public class Mars {
-    private final List<Point> surface;
+import io.github.nicolasdesnoust.marslander.math.Segment;
 
-    public Mars(List<Point> surface) {
+public class Mars {
+    private final List<Segment> surface;
+
+    public Mars(List<Segment> surface) {
         this.surface = Collections.unmodifiableList(surface);
     }
 
-    public List<Point> getSurface() {
+    public List<Segment> getSurface() {
         return surface;
     }
 }

@@ -17,7 +17,8 @@ public class CapsuleService {
 	private static final int HORIZONTAL_SPEED_THRESHOLD = 20;
 	private static final int VERTICAL_SPEED_THRESHOLD = 40;
 
-	//private static final Logger log = LoggerFactory.getLogger(CapsuleService.class);
+	// private static final Logger log =
+	// LoggerFactory.getLogger(CapsuleService.class);
 
 	public void updateCapsuleState(Capsule capsule, int requestedRotate, int requestedPower,
 			InitialGameState initialGameState) {
@@ -92,13 +93,10 @@ public class CapsuleService {
 		}
 
 		Segment currentPathSegment = new Segment(new Point(x, y), new Point(newX, newY));
-		List<Point> marsSurface = initialGameState.getMars().getSurface();
+		List<Segment> marsSurface = initialGameState.getMars().getSurface();
 		Segment landingArea = initialGameState.getLandingArea();
 
-		Point lastPoint = marsSurface.get(0);
-		for (int i = 1; i < marsSurface.size(); i++) {
-			Point currentSurfacePoint = marsSurface.get(i);
-			Segment currentSurfaceSegment = new Segment(lastPoint, currentSurfacePoint);
+		for (Segment currentSurfaceSegment : marsSurface) {
 			if (isOutOfMap(capsule)) {
 				capsule.setLandingState(LandingState.OUT_OF_MAP);
 			} else if (currentPathSegment.doesIntersect(currentSurfaceSegment)) {
@@ -108,7 +106,7 @@ public class CapsuleService {
 					capsule.setLandingState(LandingState.CRASHED);
 				}
 
-				//log.info("{} intersect {}", currentPathSegment, currentSurfaceSegment);
+				// log.info("{} intersect {}", currentPathSegment, currentSurfaceSegment);
 				Point intersection = Line.calculateIntersectionPoint(
 						Line.computeLineEquation(currentPathSegment),
 						Line.computeLineEquation(currentSurfaceSegment)).get();
@@ -116,7 +114,6 @@ public class CapsuleService {
 				newY = intersection.getY();
 				break;
 			}
-			lastPoint = currentSurfacePoint;
 		}
 
 		capsule.setPosition(new Point(newX, newY));

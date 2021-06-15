@@ -21,30 +21,27 @@ public class PathFinder {
     	List<Point> path = buildStraightPath(capsule, initialGameState);
 
         Segment currentPathSegment = new Segment(path.get(0), path.get(1));
-        List<Point> marsSurface = new ArrayList<>(mars.getSurface());
+        List<Segment> marsSurface = new ArrayList<>(mars.getSurface());
         if (currentPathSegment.getP1().getX() > currentPathSegment.getP2().getX()) {
-            Collections.reverse(marsSurface);
+            Collections.reverse(marsSurface); // ne fonctionne plus !
             Point p1 = landingArea.getP1();
             landingArea.setP1(landingArea.getP2());
             landingArea.setP2(p1);
         }
-        Point lastPoint = marsSurface.get(0);
 
-        for (int i = 1; i < marsSurface.size() - 1; i++) {
-            Point currentPoint = marsSurface.get(i);
-            Segment currentSurfaceSegment = new Segment(lastPoint, currentPoint);
+        for (int i = 0; i < marsSurface.size(); i++) {
+        	Segment currentSurfaceSegment = marsSurface.get(i);
             if (!currentSurfaceSegment.equals(landingArea) && currentPathSegment.doesIntersect(currentSurfaceSegment)) {
                 //log.debug("Path segment {} does intersect {}", currentPathSegment, currentSurfaceSegment);
 
-                Point nextPoint = marsSurface.get(i + 1);
-                Line bisectingLine = Line.getBisectingLine(lastPoint, currentPoint, nextPoint);
+                Point nextPoint = marsSurface.get(i + 1).getP1();
+                Line bisectingLine = Line.getBisectingLine(currentSurfaceSegment.getP1(), currentSurfaceSegment.getP2(), nextPoint);
                 //log.debug("Bisecting line: {}", bisectingLine);
-                Point newPathPoint = bisectingLine.getPointAbove(currentPoint, 200);
+                Point newPathPoint = bisectingLine.getPointAbove(currentSurfaceSegment.getP2(), 200);
 
                 path.add(path.size() - 1, newPathPoint);
                 currentPathSegment = new Segment(newPathPoint, currentPathSegment.getP2());
             }
-            lastPoint = currentPoint;
         }
 
 //        path.forEach(point -> log.info("Path point: {} {} {}",
@@ -59,7 +56,7 @@ public class PathFinder {
     private List<Point> buildStraightPath(Capsule capsule, InitialGameState initialGameState) {
         List<Point> straightPath = new ArrayList<>();
 
-        straightPath.add(capsule.getPosition());
+        straightPath.add(capsule.getPosition()); // Est-ce que la position nécessite d'être clonée ?
         straightPath.add(initialGameState.getLandingArea().getMiddle());
         //log.debug("Straight path built between {} and {}", straightPath.get(0), straightPath.get(1));
 
