@@ -21,6 +21,7 @@ public class GameStateParser {
     public InitialGameState parseInitialGameState(Scanner in) {
         int surfaceSize = in.nextInt();
         List<Segment> marsSurface = new ArrayList<>(surfaceSize);
+
         Point previousPoint = new Point(in.nextInt(), in.nextInt());
         for (int i = 1; i < surfaceSize; i++) {
         	Point currentPoint = new Point(in.nextInt(), in.nextInt());
@@ -31,6 +32,7 @@ public class GameStateParser {
         Capsule initialCapsule = parseCurrentTurnState(in);
         Mars mars = new Mars(marsSurface);	
         Segment landingArea = marsService.findLandingArea(mars);
+  
         return new InitialGameState(mars, initialCapsule, landingArea);
     }
 
