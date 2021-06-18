@@ -9,9 +9,9 @@ import {
 import { Color, BaseChartDirective, Label } from 'ng2-charts';
 import * as pluginAnnotations from 'chartjs-plugin-annotation';
 import { HttpService } from '../http.service';
-import { Point } from '../model/point';
 import { concat } from 'rxjs';
 import { finalize } from 'rxjs/operators';
+import { Individual } from '../model/individual';
 
 @Component({
   selector: 'app-simulator-line-chart',
@@ -115,9 +115,9 @@ export class SimulatorLineChartComponent {
   }
 
   loadCurrentGeneration() {
-    this.httpService
-      .getEvaluations(this.currentGeneration)
-      .subscribe((evaluations) => (this.generation = evaluations));
+    // this.httpService
+    //   .getEvaluations(this.currentGeneration)
+    //   .subscribe((evaluations) => (this.generation = evaluations));
 
     this.httpService
       .getGeneration(this.currentGeneration)
@@ -128,9 +128,9 @@ export class SimulatorLineChartComponent {
         generations.forEach((generation) => {
           generation = this.filterSamePoints(generation);
           if (((generation[0] as any).type as string).indexOf('D') != -1) {
-            generation.sort((p1: any, p2: any) => p1.index - p2.index);
+            generation.genes.sort((p1: any, p2: any) => p1.index - p2.index);
           } else {
-            generation.sort((p1: any, p2: any) => p1.geneIndex - p2.geneIndex);
+            generation.genes.sort((p1: any, p2: any) => p1.geneIndex - p2.geneIndex);
           }
 
           const borderDash =
@@ -140,7 +140,7 @@ export class SimulatorLineChartComponent {
 
           this.lineChartData.push({
             label: (generation[0] as any).type,
-            data: generation,
+            data: generation.genes,
             showLine: true,
             fill: false,
             borderDash: borderDash,
@@ -154,11 +154,12 @@ export class SimulatorLineChartComponent {
       });
   }
 
-  filterSamePoints(individual: Point[]): Point[] {
-    return individual.filter(
+  filterSamePoints(individual: Individual): Individual {
+    individual.genes = individual.genes.filter(
       (point, i, a) =>
         a.findIndex((t) => t.x === point.x && t.y === point.y) === i
     );
+    return individual;
   }
 
   generateRandomChartColor() {

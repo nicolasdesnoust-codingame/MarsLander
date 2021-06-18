@@ -3,6 +3,8 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map, shareReplay } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
+import { Gene } from './model/gene';
+import { Individual } from './model/individual';
 import { Point } from './model/point';
 
 @Injectable({
@@ -28,13 +30,10 @@ export class HttpService {
 
   private requestMarsSurface(): Observable<Point[]> {
     return this.http
-      .get<Point[]>(`${this.baseURL}/search/surface`)
-      .pipe(
-        map((surface) => surface.sort((p1: Point, p2: Point) => p1.x - p2.x))
-      );
+      .get<Point[]>(`${this.baseURL}/search/surface`);
   }
 
-  getGeneration(generation: number): Observable<Point[][]> {
+  getGeneration(generation: number): Observable<Individual[]> {
     if (!this.cache.has(`generation-${generation}`)) {
       this.cache.set(
         `generation-${generation}`,
@@ -45,10 +44,17 @@ export class HttpService {
     return this.cache.get(`generation-${generation}`);
   }
 
-  private requestGeneration(generation: number): Observable<Point[][]> {
-    return this.http.get<Point[][]>(
-      `${this.baseURL}/search/generations/${generation}`
-    );
+  private requestGeneration(generation: number): Observable<Individual[]> {
+    return this.http
+      .get<Individual[]>(`${this.baseURL}/search/generations/${generation}`)
+      .pipe(
+        map((individuals) => {
+          return individuals.map((individual) => {
+            individual.genes.sort((p1: Gene, p2: Gene) => p1.index - p2.index);
+            return individual;
+          });
+        })
+      );
   }
 
   getBestSolution(): Observable<Point[]> {
@@ -64,6 +70,36 @@ export class HttpService {
 
   private requestBestSolution(): Observable<Point[]> {
     return this.http.get<Point[]>(`${this.baseURL}/search/best-solution`);
+  }
+
+  getPath(): Observable<Point[]> {
+    if (!this.cache.has(`path`)) {
+      this.cache.set(
+        `path`,
+        this.requestPath().pipe(shareReplay(1))
+      );
+    }
+
+    return this.cache.get(`path`);
+  }
+
+  private requestPath(): Observable<Point[]> {
+    return this.http.get<Point[]>(`${this.baseURL}/search/path`);
+  }
+
+  getPathPoints(): Observable<Point[]> {
+    if (!this.cache.has(`path-points`)) {
+      this.cache.set(
+        `path-points`,
+        this.requestPathPoints().pipe(shareReplay(1))
+      );
+    }
+
+    return this.cache.get(`path-points`);
+  }
+
+  private requestPathPoints(): Observable<Point[]> {
+    return this.http.get<Point[]>(`${this.baseURL}/search/path/points`);
   }
 
   reset(): Observable<void> {

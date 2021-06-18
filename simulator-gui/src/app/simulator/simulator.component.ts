@@ -7,6 +7,7 @@ import {
 } from '@angular/core';
 import * as PIXI from 'pixi.js';
 import { HttpService } from '../http.service';
+import { Individual } from '../model/individual';
 import { Point } from '../model/point';
 
 @Component({
@@ -34,7 +35,7 @@ export class SimulatorComponent implements OnInit, OnDestroy {
   generationTimeout: number = null;
   generationsLoadingPercentage: number = 0;
   bestSolutionFound: boolean;
-  currentBestSolutions: any[];
+  currentBestSolutions: Individual[];
 
   constructor(
     private httpService: HttpService,
@@ -153,7 +154,8 @@ export class SimulatorComponent implements OnInit, OnDestroy {
   private updateCurrentGenerationEach(timeInterval: number): number {
     return window.setInterval(() => {
       this.currentGeneration =
-        (this.currentGeneration + this.generationIncrement) % this.generationCount;
+        (this.currentGeneration + this.generationIncrement) %
+        this.generationCount;
       if (this.currentGeneration == 0) {
         this.currentGeneration = this.firstGeneration;
       }
@@ -173,11 +175,11 @@ export class SimulatorComponent implements OnInit, OnDestroy {
   }
 
   updateCurrentBestSolutions() {
-    this.httpService.getEvaluations(this.currentGeneration).subscribe((evaluations: any[]) => {
-      this.currentBestSolutions = evaluations
-      .sort((e1, e2) => e2.evaluation - e1.evaluation)
-      .slice(0, 6);
-    });
+    // this.httpService.getEvaluations(this.currentGeneration).subscribe((evaluations: any[]) => {
+    //   this.currentBestSolutions = evaluations
+    //   .sort((e1, e2) => e2.evaluation - e1.evaluation)
+    //   .slice(0, 6);
+    // });
   }
 
   private printCurrentGeneration() {
@@ -185,11 +187,25 @@ export class SimulatorComponent implements OnInit, OnDestroy {
     this.loadMarsSurface();
     this.loadBestSolution();
     this.loadCurrentGeneration();
+    this.loadPath();
+    //this.loadPathPoints();
   }
 
   private loadMarsSurface() {
     this.httpService.getMarsSurface().subscribe((surface) => {
       this.drawPath(surface, 0xde3249);
+    });
+  }
+
+  private loadPath() {
+    this.httpService.getPath().subscribe((path) => {
+      this.drawPath(path, 0x349beb);
+    });
+  }
+
+  private loadPathPoints() {
+    this.httpService.getPathPoints().subscribe((pathPoints) => {
+      this.drawPath(pathPoints, 0x922fbd);
     });
   }
 
@@ -210,12 +226,19 @@ export class SimulatorComponent implements OnInit, OnDestroy {
   private loadCurrentGeneration() {
     this.httpService
       .getGeneration(this.currentGeneration)
-      .subscribe((generations) => {
-        generations.forEach((generation) => {
-          generation = this.filterSamePoints(generation);
-          generation.sort((p1: any, p2: any) => p1.geneIndex - p2.geneIndex);
-          this.drawPath(generation, 0xedf2f4);
+      .subscribe((generation) => {
+        generation.forEach((individual) => {
+          individual = this.filterSamePoints(individual);
+          individual.genes.sort((p1: any, p2: any) => p1.index - p2.index);
         });
+
+        generation.sort((e1, e2) => e2.evaluation - e1.evaluation);
+
+        this.currentBestSolutions = generation.slice(0, 6);
+        const otherSolutions = generation.slice(6, generation.length);
+
+        this.currentBestSolutions.forEach(individual => this.drawPath(individual.genes, 0xffcc00));
+        otherSolutions.forEach(individual => this.drawPath(individual.genes, 0xedf2f4));
       });
   }
 
@@ -223,7 +246,11 @@ export class SimulatorComponent implements OnInit, OnDestroy {
     this.generationsLoadingPercentage = 0;
     let generationLoadedCount = 0;
 
-    for (let i = this.firstGeneration; i < this.generationCount; i+= this.generationIncrement) {
+    for (
+      let i = this.firstGeneration;
+      i < this.generationCount;
+      i += this.generationIncrement
+    ) {
       this.httpService.getGeneration(i).subscribe(() => {
         console.log(i + ' loaded');
         generationLoadedCount++;
@@ -236,11 +263,12 @@ export class SimulatorComponent implements OnInit, OnDestroy {
     }
   }
 
-  filterSamePoints(individual: Point[]): Point[] {
-    return individual.filter(
+  filterSamePoints(individual: Individual): Individual {
+    individual.genes = individual.genes.filter(
       (point, i, a) =>
         a.findIndex((t) => t.x === point.x && t.y === point.y) === i
     );
+    return individual;
   }
 
   drawPath(points: Point[], color: number) {

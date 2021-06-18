@@ -60,25 +60,30 @@ public class SimulatorRunnable implements Runnable {
 			SimulatorService.currentTurn.incrementAndGet();
 			org.slf4j.MDC.put("turn", String.valueOf(SimulatorService.currentTurn));
 
-			log.info("Capsule position: {} {}",
-					kv("type", "real-capsule"),
-					kv("capsule", state.getCapsule()));
+			//log.info("Capsule position: {} {}",
+			//		kv("type", "real-capsule"),
+			//		kv("capsule", state.getCapsule()));
 		}
 	}
 
 	private void sendMarsSurfaceToSolver(PrintWriter out) {
 		List<Segment> marsSurface = state.getMars().getSurface();
+		System.err.println("mars surf to send :" + marsSurface);
 
-		out.println(marsSurface.size());
-		marsSurface.forEach(segment -> sendPointToSolver(out, segment.getP1()));
-		sendPointToSolver(out, marsSurface.get(marsSurface.size()).getP2());
+		out.println(marsSurface.size() + 1);
+		int index = 0;
+		for(Segment segment : marsSurface) {
+			sendPointToSolver(out, segment.getP1(), index++);
+		}
+		sendPointToSolver(out, marsSurface.get(marsSurface.size() - 1).getP2(), index);
 	}
 
-	private void sendPointToSolver(PrintWriter out, Point point) {
+	private void sendPointToSolver(PrintWriter out, Point point, int index) {
 		out.println(Math.round(point.getX()) + " " + Math.round(point.getY()));
 
 		log.info("Surface point: {} {} {}",
 				kv("type", "surface"),
+				kv("index", index),
 				kv("x", Math.round(point.getX())),
 				kv("y", Math.round(point.getY())));
 	}
@@ -103,7 +108,7 @@ public class SimulatorRunnable implements Runnable {
 			log.debug("Received {} {}", kv("rotate", rotate), kv("power", power));
 
 			capsuleService.updateCapsuleState(state.getCapsule(), rotate, power, state);
-			log.info("New landing state: {}", kv("landingState", state.getCapsule().getLandingState()));
+			//log.info("New landing state: {}", kv("landingState", state.getCapsule().getLandingState()));
 			return true;
 		} else {
 			return false;
