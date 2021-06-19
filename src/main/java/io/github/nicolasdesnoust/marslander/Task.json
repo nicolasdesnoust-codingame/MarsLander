@@ -17,7 +17,7 @@
   "checkerClass" : "net.egork.chelper.checkers.TokenChecker",
   "checkerParameters" : "",
   "testClasses" : [ ],
-  "date" : "2021.06.18",
+  "date" : "2021.06.19",
   "contestName" : "MarsLander",
   "truncate" : true,
   "inputClass" : "java.util.Scanner",

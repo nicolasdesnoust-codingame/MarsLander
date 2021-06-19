@@ -10,6 +10,7 @@ public class Individual {
     private Gene[] genes;
     private Capsule[] capsules;
     private double evaluation;
+    private boolean solution;
 
     public Individual(int id, Gene[] genes) {
         this.id = id;
@@ -66,5 +67,17 @@ public class Individual {
                 ", genes=" + Arrays.toString(genes) +
                 ", evaluation=" + evaluation +
                 '}';
+    }
+
+    public Capsule getLastCapsule() {
+        return capsules[capsules.length - 1];
+    }
+
+    public boolean isSolution() {
+        return solution;
+    }
+
+    public void setSolution(boolean solution) {
+        this.solution = solution;
     }
 }

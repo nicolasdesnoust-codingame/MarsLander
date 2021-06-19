@@ -52,21 +52,19 @@ public class PopulationEvaluator {
 			Individual individual,
 			List<Point> pathToFollow,
 			InitialGameState initialGameState) {
-		int geneCount = individual.getGenes().length;
-		Capsule lastCapsule = individual.getCapsules()[geneCount - 1];
 		Segment landingArea = initialGameState.getLandingArea();
 		double distanceRatio;
 		double speedAndRotateRatio;
 
-		Capsule capsuleRightBeforeCrash = getCapsuleRightBeforeTerminalState(individual);
-		List<Point> path = pathFinder.findPath(capsuleRightBeforeCrash, initialGameState);
+		Capsule lastCapsule = individual.getLastCapsule();
+		List<Point> path = pathFinder.findPath(lastCapsule, initialGameState);
 
 		if (capsuleService.isCapsuleAboveLandingArea(lastCapsule, landingArea)
 				&& lastCapsule.getPosition().getY() < heightWhereThereIsNoObstacleToLand) {
 			distanceRatio = DISTANCE_RATIO_MAXIMUM;
-			speedAndRotateRatio = computeSpeedAndRotateRatio(individual, initialGameState, distanceRatio);
+			speedAndRotateRatio = computeSpeedAndRotateRatio(individual, distanceRatio);
 		} else {
-			distanceRatio = distanceCoeff * computeDistanceRatio(individual, pathToFollow, initialGameState, path);
+			distanceRatio = distanceCoeff * computeDistanceRatio(pathToFollow, path);
 			speedAndRotateRatio = 0;
 		}
 
@@ -83,15 +81,13 @@ public class PopulationEvaluator {
 	 * Si le chemin mene à la zone d'atterissage calculer le distanceRatio le plus
 	 * éloigné du centre dans cette zone
 	 */
-	private double computeDistanceRatio(Individual individual, List<Point> pathToFollow,
-			InitialGameState initialGameState, List<Point> path) {
+	private double computeDistanceRatio(List<Point> pathToFollow, List<Point> path) {
 		double initialDistance = Point.computeDistance(pathToFollow);
 		double crashDistance = Point.computeDistance(path);
 		return 1.0 - Math.min(crashDistance, initialDistance) / initialDistance;
 	}
 
-	private double computeSpeedAndRotateRatio(Individual individual, InitialGameState initialGameState,
-			double distanceRatio) {
+	private double computeSpeedAndRotateRatio(Individual individual, double distanceRatio) {
 		int geneCount = individual.getGenes().length;
 		Capsule lastCapsule = individual.getCapsules()[geneCount - 1];
 
@@ -110,18 +106,6 @@ public class PopulationEvaluator {
 
 		double ratio = deltaHRatio * 0.5 + deltaVRatio * 0.5 + deltaRotateRatio * 0; // 0.45 + 0.45 + 0.066
 		return ratio * availableRatio;
-	}
-
-	private Capsule getCapsuleRightBeforeTerminalState(Individual individual) {
-		Capsule[] capsules = individual.getCapsules();
-
-		int currentIndex = capsules.length - 1;
-		Capsule currentCapsule = capsules[currentIndex];
-		while (currentIndex > 0 && currentCapsule.getLandingState().isTerminalState()) {
-			currentIndex--;
-			currentCapsule = capsules[currentIndex];
-		}
-		return currentCapsule;
 	}
 
 }
