@@ -5,7 +5,6 @@ import java.util.List;
 import io.github.nicolasdesnoust.marslander.core.Capsule;
 import io.github.nicolasdesnoust.marslander.core.InitialGameState;
 import io.github.nicolasdesnoust.marslander.core.LandingState;
-import io.github.nicolasdesnoust.marslander.core.Mars;
 import io.github.nicolasdesnoust.marslander.math.Line;
 import io.github.nicolasdesnoust.marslander.math.Point;
 import io.github.nicolasdesnoust.marslander.math.Segment;

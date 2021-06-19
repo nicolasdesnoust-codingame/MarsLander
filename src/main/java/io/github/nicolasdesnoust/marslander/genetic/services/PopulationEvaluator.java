@@ -17,6 +17,7 @@ public class PopulationEvaluator {
 	private final CapsuleService capsuleService = new CapsuleService();
 	private final MarsService marsService = new MarsService();
 
+	private double distanceCoeff;
 	private double heightWhereThereIsNoObstacleToLand;
 
 	/**
@@ -38,6 +39,8 @@ public class PopulationEvaluator {
 			this.heightWhereThereIsNoObstacleToLand = marsService.findHeightWhereThereIsNoObstacleToLand(
 					initialGameState.getMars().getSurface(),
 					initialGameState.getLandingArea());
+
+			distanceCoeff = computeDistanceCoeff(pathToFollow, initialGameState.getLandingArea());
 		}
 
 		for (Individual individual : population) {
@@ -54,8 +57,6 @@ public class PopulationEvaluator {
 		Segment landingArea = initialGameState.getLandingArea();
 		double distanceRatio;
 		double speedAndRotateRatio;
-
-		double distanceCoeff = computeDistanceCoeff(pathToFollow, landingArea);
 
 		Capsule capsuleRightBeforeCrash = getCapsuleRightBeforeTerminalState(individual);
 		List<Point> path = pathFinder.findPath(capsuleRightBeforeCrash, initialGameState);

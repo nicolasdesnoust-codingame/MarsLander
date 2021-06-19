@@ -20,7 +20,6 @@ import io.github.nicolasdesnoust.marslander.logs.LoggableGene;
 import io.github.nicolasdesnoust.marslander.math.Segment;
 import io.github.nicolasdesnoust.marslander.solver.CapsuleService;
 import io.github.nicolasdesnoust.marslander.solver.MarsService;
-import io.github.nicolasdesnoust.marslander.solver.PathFinder;
 
 public class GeneticAlgorithm {
 	private static final Logger log = LoggerFactory.getLogger(GeneticAlgorithm.class);
@@ -30,7 +29,6 @@ public class GeneticAlgorithm {
 	private final IndividualProcessor processor = new IndividualProcessor();
 	private final CapsuleService capsuleService = new CapsuleService();
 	private final MarsService marsService = new MarsService();
-	private final PathFinder pathFinder = new PathFinder();
 
 	private final InitialGameState initialGameState;
 	private final double heightWhereThereIsNoObstacleToLand;

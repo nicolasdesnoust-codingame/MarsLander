@@ -61,7 +61,7 @@ public class PathFinder {
 	}
 
 	private List<Point> buildStraightPath(Capsule capsule, InitialGameState initialGameState) {
-		List<Point> straightPath = new ArrayList<>();
+		List<Point> straightPath = new ArrayList<>(10);
 
 		straightPath.add(capsule.getPosition()); // Est-ce que la position nécessite d'être clonée ?
 		straightPath.add(initialGameState.getLandingArea().getMiddle());

@@ -20,8 +20,8 @@ import io.github.nicolasdesnoust.marslander.solver.MovementInstructions;
 public class GeneticMovementStrategy implements MovementStrategy {
 	private static final Logger log = LoggerFactory.getLogger(GeneticMovementStrategy.class);
 
-	private InitialGameState initialGameState;
-	private SolverConfiguration configuration;
+	private final InitialGameState initialGameState;
+	private final SolverConfiguration configuration;
 	private Individual solution;
 
 	public GeneticMovementStrategy(InitialGameState initialGameState, SolverConfiguration configuration) {
