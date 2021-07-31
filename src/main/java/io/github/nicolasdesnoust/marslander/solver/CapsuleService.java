@@ -5,7 +5,6 @@ import java.util.List;
 import io.github.nicolasdesnoust.marslander.core.Capsule;
 import io.github.nicolasdesnoust.marslander.core.InitialGameState;
 import io.github.nicolasdesnoust.marslander.core.LandingState;
-import io.github.nicolasdesnoust.marslander.core.Mars;
 import io.github.nicolasdesnoust.marslander.math.Line;
 import io.github.nicolasdesnoust.marslander.math.Point;
 import io.github.nicolasdesnoust.marslander.math.Segment;
@@ -17,17 +16,15 @@ public class CapsuleService {
 	private static final int HORIZONTAL_SPEED_THRESHOLD = 20;
 	private static final int VERTICAL_SPEED_THRESHOLD = 40;
 
-	//private static final Logger log = LoggerFactory.getLogger(CapsuleService.class);
+	// private static final Logger log =
+	// LoggerFactory.getLogger(CapsuleService.class);
 
 	public void updateCapsuleState(Capsule capsule, int requestedRotate, int requestedPower,
 			InitialGameState initialGameState) {
 		if (!capsule.getLandingState().isTerminalState()) {
-			Point oldPosition = capsule.getPosition();
-
 			updateCapsuleRotateAndPower(capsule, requestedRotate, requestedPower);
 			updateCapsuleFuel(capsule);
 			updateCapsulePositionAndSpeed(capsule, initialGameState);
-			updateCapsuleLandingState(capsule, oldPosition, initialGameState.getMars());
 		}
 	}
 
@@ -80,64 +77,49 @@ public class CapsuleService {
 		capsule.sethSpeed(newHSpeed);
 		capsule.setvSpeed(newVSpeed);
 
-		if (newX > MAP_WIDTH + 1) {
-			newX = MAP_WIDTH + 1.0;
-		} else if (newX < 0 - 1.0) {
-			newX = 0 - 1.0;
-		}
-		if (newY > MAP_HEIGHT + 1) {
-			newY = MAP_HEIGHT + 1.0;
-		} else if (newY < 0 - 1.0) {
-			newY = 0 - 1.0;
+		if (x >= MAP_WIDTH + 1 || x <= -1 || y > MAP_HEIGHT + 1 || y < -1) {
+			newX = x;
+			newY = y;
+		} else {
+			if (newX > MAP_WIDTH + 1) {
+				newX = MAP_WIDTH + 1.0;
+			} else if (newX < 0 - 1.0) {
+				newX = 0 - 1.0;
+			}
+			if (newY > MAP_HEIGHT + 1) {
+				newY = MAP_HEIGHT + 1.0;
+			} else if (newY < 0 - 1.0) {
+				newY = 0 - 1.0;
+			}
 		}
 
 		Segment currentPathSegment = new Segment(new Point(x, y), new Point(newX, newY));
-		List<Point> marsSurface = initialGameState.getMars().getSurface();
+		List<Segment> marsSurface = initialGameState.getMars().getSurface();
 		Segment landingArea = initialGameState.getLandingArea();
 
-		Point lastPoint = marsSurface.get(0);
-		for (int i = 1; i < marsSurface.size(); i++) {
-			Point currentSurfacePoint = marsSurface.get(i);
-			Segment currentSurfaceSegment = new Segment(lastPoint, currentSurfacePoint);
-			if (isOutOfMap(capsule)) {
-				capsule.setLandingState(LandingState.OUT_OF_MAP);
-			} else if (currentPathSegment.doesIntersect(currentSurfaceSegment)) {
-				if (currentSurfaceSegment.equals(landingArea) && isCapsuleAbleToLand(capsule)) {
-					capsule.setLandingState(LandingState.LANDED);
-				} else {
-					capsule.setLandingState(LandingState.CRASHED);
-				}
+		if (isOutOfMap(capsule)) {
+			capsule.setLandingState(LandingState.OUT_OF_MAP);
+		} else {
+			for (Segment currentSurfaceSegment : marsSurface) {
+				if (currentPathSegment.doesIntersect(currentSurfaceSegment)) {
+					if (currentSurfaceSegment.equals(landingArea) && isCapsuleAbleToLand(capsule)) {
+						capsule.setLandingState(LandingState.LANDED);
+					} else {
+						capsule.setLandingState(LandingState.CRASHED);
+					}
 
-				//log.info("{} intersect {}", currentPathSegment, currentSurfaceSegment);
-				Point intersection = Line.calculateIntersectionPoint(
-						Line.computeLineEquation(currentPathSegment),
-						Line.computeLineEquation(currentSurfaceSegment)).get();
-				newX = intersection.getX();
-				newY = intersection.getY();
-				break;
+					// log.info("{} intersect {}", currentPathSegment, currentSurfaceSegment);
+					Point intersection = Line.calculateIntersectionPoint(
+							Line.computeLineEquation(currentPathSegment),
+							Line.computeLineEquation(currentSurfaceSegment)).get();
+					newX = intersection.getX();
+					newY = intersection.getY();
+					break;
+				}
 			}
-			lastPoint = currentSurfacePoint;
 		}
 
 		capsule.setPosition(new Point(newX, newY));
-	}
-
-	private void updateCapsuleLandingState(Capsule capsule, Point oldPosition, Mars mars) {
-		/*
-		 * if (isOutOfMap(capsule)) { capsule.setLandingState(LandingState.OUT_OF_MAP);
-		 * } else { Segment currentPathSegment = new Segment(oldPosition,
-		 * capsule.getPosition()); List<Point> marsSurface = mars.getSurface(); Segment
-		 * landingArea = marsService.findLandingArea(mars);
-		 * 
-		 * Point lastPoint = marsSurface.get(0); for (int i = 1; i < marsSurface.size();
-		 * i++) { Point currentSurfacePoint = marsSurface.get(i); Segment
-		 * currentSurfaceSegment = new Segment(lastPoint, currentSurfacePoint); if
-		 * (currentPathSegment.doesIntersect(currentSurfaceSegment)) { if
-		 * (currentSurfaceSegment.equals(landingArea) && isCapsuleAbleToLand(capsule)) {
-		 * capsule.setLandingState(LandingState.LANDED); } else {
-		 * capsule.setLandingState(LandingState.CRASHED); } } lastPoint =
-		 * currentSurfacePoint; } }
-		 */
 	}
 
 	public boolean isCapsuleAboveLandingArea(Capsule capsule, Segment landingArea) {

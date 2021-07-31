@@ -1,29 +1,28 @@
 package io.github.nicolasdesnoust.marslander.solver;
 
-import static net.logstash.logback.argument.StructuredArguments.kv;
-
-import java.io.PrintWriter;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
-import java.util.Scanner;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.github.nicolasdesnoust.marslander.config.SolverConfiguration;
 import io.github.nicolasdesnoust.marslander.core.Capsule;
 import io.github.nicolasdesnoust.marslander.core.GameStateParser;
 import io.github.nicolasdesnoust.marslander.core.InitialGameState;
-import io.github.nicolasdesnoust.marslander.genetic.GeneticAlgorithm;
-import io.github.nicolasdesnoust.marslander.genetic.model.Individual;
+import io.github.nicolasdesnoust.marslander.math.Point;
+import io.github.nicolasdesnoust.marslander.math.Segment;
 import io.github.nicolasdesnoust.marslander.simulator.SimulatorService;
+import io.github.nicolasdesnoust.marslander.solver.strategies.GeneticMovementStrategy;
+import io.github.nicolasdesnoust.marslander.solver.strategies.MovementStrategy;
+import io.github.nicolasdesnoust.marslander.solver.strategies.PidMovementStrategy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.PrintWriter;
+import java.util.Map;
+import java.util.Scanner;
+
+import static net.logstash.logback.argument.StructuredArguments.kv;
 
 public class SolverMain {
     private static final Logger log = LoggerFactory.getLogger(SolverMain.class);
 
     private static final CapsuleService capsuleService = new CapsuleService();
-    private static final PidService pidService = new PidService();
     private static final GameStateParser gameStateParser = new GameStateParser();
 
     private SolverMain() {
@@ -32,90 +31,60 @@ public class SolverMain {
     @SuppressWarnings("squid:S2189")
     public static void solve(Scanner in, PrintWriter out, SolverConfiguration configuration) {
         InitialGameState initialGameState = gameStateParser.parseInitialGameState(in);
+        logPathPoints(initialGameState.getPathPoints());
+        MovementStrategy movementStrategy = new GeneticMovementStrategy(initialGameState, configuration);
 
-        GeneticAlgorithm geneticAlgorithm = new GeneticAlgorithm(initialGameState);
-        List<Individual> population = geneticAlgorithm.findBestPopulation(configuration);
-        Optional<Individual> bestSolutionFoundOptional = findBestSolution(initialGameState, geneticAlgorithm,
-                population);
+        int turnCount = 0;
+        MovementInstructions movementInstructions = movementStrategy.findMovementInstructions(
+                initialGameState.getCapsule(), turnCount);
+        out.println(movementInstructions);
 
-        Individual solution;
-        boolean isARealSolution = false;
-        if (bestSolutionFoundOptional.isPresent()) {
-			isARealSolution = true;
-            solution = bestSolutionFoundOptional.get();
-        } else {
-            Optional<Individual> viableSolutionFoundOptional = findViableSolution(population);
-            if (viableSolutionFoundOptional.isPresent()) {
-                solution = viableSolutionFoundOptional.get();
-                System.err.println(solution);
-            } else {
-                throw new RuntimeException("No solution found using genetic algorithm");
-            }
-        }
-        logBestSolutionFound(solution);
-
-        int nextPower = solution.getCapsules()[0].getPower();
-        int nextRotate = solution.getCapsules()[0].getRotate();
-        nextPower = Math.max(Math.min(nextPower, 4), 0);
-        nextRotate = Math.max(Math.min(nextRotate, 90), -90);
-        out.println(nextRotate + " " + nextPower);
-
-        String strategy = "genetic";
-        int turnCount = 1;
         // game loop
         while (true) {
+            turnCount++;
             org.slf4j.MDC.put("turn", String.valueOf(SimulatorService.currentTurn));
             Capsule capsule = gameStateParser.parseCurrentTurnState(in);
 
-            if (capsuleService.isCapsuleAboveLandingArea(capsule, initialGameState.getLandingArea())
-                    && (isARealSolution && capsuleService.couldCapsuleLand(capsule)
-					|| !isARealSolution
-					&& capsule.getPosition().getY() - initialGameState.getLandingArea().getP1().getY() >= 200)) {
-                strategy = "pid";
+            Segment landingArea = initialGameState.getLandingArea();
+            if (mustPidCapsuleMovement(movementStrategy, capsule, landingArea)) {
+                log.info("Switching to Pid Strategy");
+                movementStrategy = new PidMovementStrategy(initialGameState);
             }
 
-            if (strategy.equals("genetic")) {
-                nextPower = solution.getCapsules()[turnCount].getPower();
-                nextRotate = solution.getCapsules()[turnCount].getRotate();
-                nextPower = Math.max(Math.min(nextPower, 4), 0);
-                nextRotate = Math.max(Math.min(nextRotate, 90), -90);
-            } else {
-                nextPower = pidService.pidNextPower(capsule, initialGameState);
-                nextRotate = pidService.pidNextRotate(capsule, initialGameState);
+            movementInstructions = movementStrategy.findMovementInstructions(capsule, turnCount);
+            capsuleService.updateCapsuleState(
+                    capsule,
+                    movementInstructions.getRotate(),
+                    movementInstructions.getPower(),
+                    initialGameState
+            );
+            if (doesCapsuleHitLandingArea(capsule, landingArea)) {
+                movementInstructions = new MovementInstructions(0, movementInstructions.getPower());
             }
 
-            capsuleService.updateCapsuleState(capsule, nextRotate, nextPower, initialGameState);
-            if(capsule.getPosition().getY() <= initialGameState.getLandingArea().getP1().getY()) {
-                nextRotate = 0;
-            }
-            // 2 integers: rotate power. rotate is the desired rotation angle (should be 0
-            // for level 1), power is the desired thrust power (0 to 4).
-            out.println(nextRotate + " " + nextPower);
-            turnCount++;
+            out.println(movementInstructions);
         }
     }
 
-    private static Optional<Individual> findBestSolution(InitialGameState initialGameState,
-                                                         GeneticAlgorithm geneticAlgorithm,
-                                                         List<Individual> population) {
-        return population.stream()
-                .filter(individual -> geneticAlgorithm.isTheIndividualASolution(
-                        individual,
-                        initialGameState.getLandingArea()))
-                .max(Comparator.comparingDouble(Individual::getEvaluation));
-    }
-
-    private static Optional<Individual> findViableSolution(List<Individual> population) {
-        return population.stream()
-                .max(Comparator.comparingDouble(Individual::getEvaluation));
-    }
-
-    private static void logBestSolutionFound(Individual bestSolutionFound) {
-        for (int i = 0; i < bestSolutionFound.getCapsules().length; i++) {
-            log.info("{}: {} {}",
-                    kv("type", "best-solution"),
-                    kv("generation", i),
-                    kv("capsule", bestSolutionFound.getCapsules()[i]));
+    private static void logPathPoints(Map<Integer, Point> pathPoints) {
+        for (Map.Entry<Integer, Point> pathPoint : pathPoints.entrySet()) {
+            log.info("Path point: {} {} {} {}",
+                    kv("type", "point"),
+                    kv("index", pathPoint.getKey()),
+                    kv("x", Math.round(pathPoint.getValue().getX())),
+                    kv("y", Math.round(pathPoint.getValue().getY())));
         }
+    }
+
+    private static boolean doesCapsuleHitLandingArea(Capsule capsule, Segment landingArea) {
+        return capsule.getPosition().getY() <= landingArea.getP1().getY();
+    }
+
+    private static boolean mustPidCapsuleMovement(MovementStrategy movementStrategy, Capsule capsule,
+                                                  Segment landingArea) {
+        return capsuleService.isCapsuleAboveLandingArea(capsule, landingArea)
+                && movementStrategy.doesSolutionNeedAssistance()
+                && (capsuleService.couldCapsuleLand(capsule)
+                || capsule.getPosition().getY() - landingArea.getP1().getY() >= 200);
     }
 }

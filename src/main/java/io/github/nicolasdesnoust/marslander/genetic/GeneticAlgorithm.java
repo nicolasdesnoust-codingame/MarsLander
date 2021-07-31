@@ -7,12 +7,11 @@ import io.github.nicolasdesnoust.marslander.genetic.model.Individual;
 import io.github.nicolasdesnoust.marslander.genetic.services.IndividualProcessor;
 import io.github.nicolasdesnoust.marslander.genetic.services.PopulationEvolver;
 import io.github.nicolasdesnoust.marslander.genetic.services.PopulationGenerator;
-import io.github.nicolasdesnoust.marslander.math.Point;
-import io.github.nicolasdesnoust.marslander.math.Segment;
-import io.github.nicolasdesnoust.marslander.solver.CapsuleService;
+import io.github.nicolasdesnoust.marslander.logs.LoggableGene;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static net.logstash.logback.argument.StructuredArguments.kv;
@@ -23,7 +22,7 @@ public class GeneticAlgorithm {
     private final PopulationGenerator generator = new PopulationGenerator();
     private final PopulationEvolver evolver;
     private final IndividualProcessor processor = new IndividualProcessor();
-    private final CapsuleService capsuleService = new CapsuleService();
+
     private final InitialGameState initialGameState;
 
     public GeneticAlgorithm(InitialGameState initialGameState) {
@@ -41,9 +40,12 @@ public class GeneticAlgorithm {
 
         boolean solutionFound = false;
         while (!solutionFound && currentGeneration <= configuration.getGenerations()) {
+            log.info("Current generation : {}", currentGeneration);
             population = evolver.evolve(population, configuration.getNumberOfSelections(), currentGeneration);
+            log.info("Evolve done");
 
-            if (hasASolution(population, initialGameState)) {
+            if (hasASolution(population)) {
+                System.err.println("Solution found !");
                 solutionFound = true;
             }
 
@@ -60,55 +62,39 @@ public class GeneticAlgorithm {
         }
         for (Individual individual : population) {
             Capsule[] capsules = individual.getCapsules();
-            log.debug("Individual {}: {} {} {}",
-                    kv("index", individual.getId()),
-                    kv("type", "evaluation"),
+
+            List<LoggableGene> genes = new ArrayList<>(capsules.length);
+            LoggableGene previousGene = null;
+            for (int i = 0; i < capsules.length; i++) {
+                Capsule capsule = capsules[i];
+                LoggableGene gene = new LoggableGene();
+                gene.setIndex(i);
+                gene.setX((int) Math.round(capsule.getPosition().getX()));
+                gene.setY((int) Math.round(capsule.getPosition().getY()));
+                if (previousGene != null
+                        && gene.getX() == previousGene.getX()
+                        && gene.getY() == previousGene.getY()) {
+                    break;
+                }
+                genes.add(gene);
+                previousGene = gene;
+            }
+            log.debug("Individual {}: {} {} {} {}",
+                    individual.getId(),
                     kv("generation", generation),
-                    kv("evaluation", individual.getEvaluation())
-            );
-
-            for (int j = 0; j < capsules.length; j++) {
-                Point capsulePosition = capsules[j].getPosition();
-                log.debug("Individual {} point {}: {} {} {} {} {}",
-                        individual.getId(),
-                        kv("geneIndex", j),
-                        kv("generation", generation),
-                        kv("type", "individual-" + individual.getId()),
-                        kv("x", Math.round(capsulePosition.getX())),
-                        kv("y", Math.round(capsulePosition.getY())),
-                        kv("capsule", capsules[j])
-                );
-            }
+                    kv("type", "individual-" + individual.getId()),
+                    kv("evaluation", individual.getEvaluation()),
+                    kv("genes", genes));
         }
     }
 
-    /**
-     * Vérifie si l'un des individus de la population forme une solution au problème.
-     * Un individu est une solution si la capsule survole la zone d'atterissage avec
-     * des vitesses horizontales et verticales comprises entre les bornes imposées.
-     * <p>
-     * NB: l'angle de rotation est négligé puisqu'il peut être corrigé manuellement
-     * par la suite.
-     */
-    private boolean hasASolution(List<Individual> population, InitialGameState initialGameState) {
-        Segment landingArea = initialGameState.getLandingArea();
-
+    private boolean hasASolution(List<Individual> population) {
         for (Individual individual : population) {
-            if (isTheIndividualASolution(individual, landingArea)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    public boolean isTheIndividualASolution(Individual individual, Segment landingArea) {
-        for (Capsule capsule : individual.getCapsules()) {
-            if (capsuleService.isCapsuleAboveLandingArea(capsule, landingArea)
-                    && capsuleService.couldCapsuleLand(capsule)) {
+            if (individual.isSolution()) {
                 return true;
             }
         }
         return false;
     }
+
 }
