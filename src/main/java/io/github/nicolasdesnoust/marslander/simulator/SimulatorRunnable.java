@@ -12,10 +12,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.github.nicolasdesnoust.marslander.core.Capsule;
-import io.github.nicolasdesnoust.marslander.core.InitialGameState;
+import io.github.nicolasdesnoust.marslander.core.GameState;
 import io.github.nicolasdesnoust.marslander.math.Point;
 import io.github.nicolasdesnoust.marslander.math.Segment;
 import io.github.nicolasdesnoust.marslander.solver.CapsuleService;
+import io.github.nicolasdesnoust.marslander.solver.MarsService;
+import io.github.nicolasdesnoust.marslander.solver.SegmentChunks;
 
 public class SimulatorRunnable implements Runnable {
 
@@ -23,14 +25,15 @@ public class SimulatorRunnable implements Runnable {
 
 	private final PipedInputStream inputStream;
 	private final PipedOutputStream outputStream;
-	private final InitialGameState state;
-
-	private final CapsuleService capsuleService = new CapsuleService();
+	private final GameState state;
+	private final CapsuleService capsuleService = new CapsuleService(
+			new SegmentChunks(),
+			new MarsService());
 
 	public SimulatorRunnable(
 			PipedInputStream inputStream,
 			PipedOutputStream outputStream,
-			InitialGameState state) {
+			GameState state) {
 		this.inputStream = inputStream;
 		this.outputStream = outputStream;
 		this.state = state;
@@ -60,19 +63,18 @@ public class SimulatorRunnable implements Runnable {
 			SimulatorService.currentTurn.incrementAndGet();
 			org.slf4j.MDC.put("turn", String.valueOf(SimulatorService.currentTurn));
 
-			//log.info("Capsule position: {} {}",
-			//		kv("type", "real-capsule"),
-			//		kv("capsule", state.getCapsule()));
+			// log.info("Capsule position: {} {}",
+			// kv("type", "real-capsule"),
+			// kv("capsule", state.getCapsule()));
 		}
 	}
 
 	private void sendMarsSurfaceToSolver(PrintWriter out) {
 		List<Segment> marsSurface = state.getMars().getSurface();
-		System.err.println("mars surf to send :" + marsSurface);
 
 		out.println(marsSurface.size() + 1);
 		int index = 0;
-		for(Segment segment : marsSurface) {
+		for (Segment segment : marsSurface) {
 			sendPointToSolver(out, segment.getP1(), index++);
 		}
 		sendPointToSolver(out, marsSurface.get(marsSurface.size() - 1).getP2(), index);
@@ -81,7 +83,7 @@ public class SimulatorRunnable implements Runnable {
 	private void sendPointToSolver(PrintWriter out, Point point, int index) {
 		out.println(Math.round(point.getX()) + " " + Math.round(point.getY()));
 
-		log.info("Surface point: {} {} {}",
+		log.info("Surface point: {} {} {} {}",
 				kv("type", "surface"),
 				kv("index", index),
 				kv("x", Math.round(point.getX())),
@@ -108,7 +110,8 @@ public class SimulatorRunnable implements Runnable {
 			log.debug("Received {} {}", kv("rotate", rotate), kv("power", power));
 
 			capsuleService.updateCapsuleState(state.getCapsule(), rotate, power, state);
-			//log.info("New landing state: {}", kv("landingState", state.getCapsule().getLandingState()));
+			// log.info("New landing state: {}", kv("landingState",
+			// state.getCapsule().getLandingState()));
 			return true;
 		} else {
 			return false;

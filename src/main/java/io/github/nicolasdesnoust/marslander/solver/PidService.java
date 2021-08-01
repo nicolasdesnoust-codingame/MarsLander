@@ -1,19 +1,19 @@
 package io.github.nicolasdesnoust.marslander.solver;
 
-import io.github.nicolasdesnoust.marslander.core.Capsule;
-import io.github.nicolasdesnoust.marslander.core.InitialGameState;
-import io.github.nicolasdesnoust.marslander.math.Segment;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalDouble;
 
+import io.github.nicolasdesnoust.marslander.core.Capsule;
+import io.github.nicolasdesnoust.marslander.core.GameState;
+import io.github.nicolasdesnoust.marslander.math.Segment;
+
 public class PidService {
     private static final int HORIZONTAL_SPEED_THRESHOLD = 15;
     private static final int VERTICAL_SPEED_THRESHOLD = 32;
 
-    public int pidNextPower(Capsule capsule, InitialGameState initialGameState) {
+    public int pidNextPower(Capsule capsule, GameState initialGameState) {
         List<Optional<Integer>> powerOptionals = new ArrayList<>();
         powerOptionals.add(getIdealPowerForVerticalSpeed(capsule));
         powerOptionals.add(getIdealPowerForHorizontalSpeed(capsule));
@@ -54,7 +54,7 @@ public class PidService {
         return Optional.empty();
     }
 
-    public int pidNextRotate(Capsule capsule, InitialGameState initialGameState) {
+    public int pidNextRotate(Capsule capsule, GameState initialGameState) {
         List<Optional<Integer>> rotateOptionals = new ArrayList<>();
         rotateOptionals.add(getIdealRotateForVerticalSpeed(capsule));
         rotateOptionals.add(getIdealRotateForHorizontalSpeed(capsule));
@@ -111,4 +111,5 @@ public class PidService {
         }
         return Optional.empty();
     }
+
 }

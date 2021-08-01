@@ -9,6 +9,8 @@ import io.github.nicolasdesnoust.marslander.math.Point;
 import io.github.nicolasdesnoust.marslander.math.Segment;
 
 public class MarsService {
+	private double cachedMaxHeight;
+
 	public Segment findLandingArea(Mars mars) {
 		List<Segment> surface = mars.getSurface();
 
@@ -19,6 +21,24 @@ public class MarsService {
 		}
 
 		return null;
+	}
+
+	public double findMaxHeight(Mars mars) {
+		if (cachedMaxHeight != 0.0) {
+			return cachedMaxHeight;
+		} else {
+			List<Segment> surface = mars.getSurface();
+
+			double max = surface.stream()
+					.map(Segment::getP1)
+					.mapToDouble(Point::getY)
+					.max()
+					.orElseThrow(() -> new RuntimeException("Mars surface cannot be empty"));
+			max = Double.max(max, surface.get(surface.size() - 1).getP2().getY());
+
+			cachedMaxHeight = max;
+			return max;
+		}
 	}
 
 	public double findHeightWhereThereIsNoObstacleToLand(List<Segment> marsSurface, Segment landingArea) {

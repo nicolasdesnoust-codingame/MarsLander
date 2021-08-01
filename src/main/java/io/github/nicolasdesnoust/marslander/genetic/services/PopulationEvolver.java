@@ -1,107 +1,140 @@
 package io.github.nicolasdesnoust.marslander.genetic.services;
 
-import static net.logstash.logback.argument.StructuredArguments.kv;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.TreeSet;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import io.github.nicolasdesnoust.marslander.core.InitialGameState;
+import io.github.nicolasdesnoust.marslander.core.GameState;
+import io.github.nicolasdesnoust.marslander.genetic.IndividualFactory;
 import io.github.nicolasdesnoust.marslander.genetic.model.Individual;
+import io.github.nicolasdesnoust.marslander.logs.IndividualLogger;
 import io.github.nicolasdesnoust.marslander.math.Point;
 import io.github.nicolasdesnoust.marslander.solver.PathFinder;
 
 public class PopulationEvolver {
-	private static final Logger log = LoggerFactory.getLogger(PopulationEvolver.class);
-
 	private static final double OLD_INDIVIDUALS_TO_KEEP_RATIO = 0.1;
 
-	private final PopulationEvaluator evaluator = new PopulationEvaluator();
-	private final PopulationSelector selector = new PopulationSelector();
-	private final PopulationCrosser crosser = new PopulationCrosser();
-	private final PopulationMutator mutator = new PopulationMutator();
-	private final IndividualProcessor processor = new IndividualProcessor();
+	private final PopulationEvaluator evaluator;
+	private final EvaluationNormalizer normalizer;
+	private final PopulationSelector selector;
+	private final PopulationCrosser crosser;
+	private final PopulationMutator mutator;
+	private final IndividualProcessor processor;
+	private final IndividualFactory individualFactory;
+	private final PathFinder pathFinder;
+	private final IndividualLogger individualLogger;
 
-	private final InitialGameState initialGameState;
-	private final List<Point> pathToFollow;
+	private List<Point> pathToFollow;
 
-	public PopulationEvolver(InitialGameState initialGameState) {
-		this.initialGameState = initialGameState;
-		this.pathToFollow = new PathFinder().findPath(initialGameState.getCapsule(), initialGameState);
-		int index = 0;
-		for(Point point : this.pathToFollow) {
-			log.info("Path point: {} {} {} {}",
-				kv("type", "path"),
-				kv("index", index++),
-				kv("x", Math.round(point.getX())),
-				kv("y", Math.round(point.getY())));
-		}
+	public PopulationEvolver(
+			PopulationCrosser crosser,
+			PopulationMutator mutator,
+			IndividualFactory individualFactory,
+			PopulationEvaluator evaluator,
+			EvaluationNormalizer normalizer,
+			PopulationSelector selector,
+			IndividualProcessor processor,
+			PathFinder pathFinder, 
+			IndividualLogger individualLogger) {
+		this.crosser = crosser;
+		this.mutator = mutator;
+		this.individualFactory = individualFactory;
+		this.evaluator = evaluator;
+		this.normalizer = normalizer;
+		this.selector = selector;
+		this.processor = processor;
+		this.pathFinder = pathFinder;
+		this.individualLogger = individualLogger;
+	}
+
+	public void updateInitialGameState(GameState initialGameState) {
+		this.pathToFollow = pathFinder.findPath(initialGameState.getCapsule(), initialGameState);
 	}
 
 	/**
 	 * Représente l'évolution d'une population sur une génération.
 	 */
-	public List<Individual> evolve(List<Individual> population, int numberOfSelections, int currentGeneration) {
-		if (currentGeneration == 0) {
-			evaluator.evaluate(population, pathToFollow, initialGameState, currentGeneration);
-			log.info("Evaluate done");
+	public List<Individual> evolve(
+			List<Individual> population,
+			int numberOfSelections,
+			int currentGeneration,
+			GameState initialGameState,
+			boolean needEvaluation) {
+
+		if (needEvaluation) {
+			evaluator.evaluate(population, pathToFollow, initialGameState);
+			individualLogger.addMissingEvaluations(population);
+			population.sort(Comparator.comparingDouble(Individual::getEvaluation));
 		}
 
-		population.sort(Comparator.comparingDouble(Individual::getEvaluation));
-		List<Individual> newIndividuals = makeNewIndividuals(population, numberOfSelections);
-		log.info("Make new individuals done");
+		boolean rankBased = true;
+		if (currentGeneration == 100) {
+			rankBased = false;
+		}
 
-		evaluator.evaluate(newIndividuals, pathToFollow, initialGameState, currentGeneration);
-		log.info("Evaluate done (2)");
-
-		return mergeIndividuals(population, newIndividuals);
+		List<Individual> newIndividuals = makeNewIndividuals(
+				population,
+				numberOfSelections,
+				initialGameState,
+				rankBased);
+		evaluator.evaluate(newIndividuals, pathToFollow, initialGameState);
+		individualLogger.addMissingEvaluations(newIndividuals);
+		
+		List<Individual> newPopulation = mergeIndividuals(population, newIndividuals);
+		individualLogger.logGeneration(newPopulation, currentGeneration);
+		return newPopulation;
 	}
 
-	private List<Individual> makeNewIndividuals(List<Individual> population, int numberOfSelections) {
-		log.info("in evolver");
-		List<Individual> newIndividuals = new ArrayList<>(population.size());
-		List<Double> evaluations = population.stream()
-				.map(Individual::getEvaluation)
-				.collect(Collectors.toList());
-		log.info("{}", evaluations);
+	private List<Individual> makeNewIndividuals(
+			List<Individual> population,
+			int numberOfSelections,
+			GameState initialGameState,
+			boolean rankBased) {
 
+		normalizer.normalizeEvaluations(population, rankBased);
+
+		List<Individual> newIndividuals = new ArrayList<>(numberOfSelections * 2);
 		for (int j = 0; j < numberOfSelections; j++) {
-			int parent1Index = selector.selectOneIndividualRandomly(population);
-			int parent2Index;
-			do {
-				parent2Index = selector.selectOneIndividualRandomly(population);
-				// log.info("selection: parent1Index:{} parent2Index:{}", parent1Index,
-				// parent2Index);
-			} while (parent2Index == parent1Index);
-
+			List<Individual> selectedIndividuals = selector.selectTwoIndividualsRandomly(population);
 			newIndividuals.addAll(crosser.crossover(
-					population.get(parent1Index),
-					population.get(parent2Index)));
+					selectedIndividuals.get(0),
+					selectedIndividuals.get(1)));
 		}
-		log.info("mutating");
-
 		mutator.mutate(newIndividuals);
-		log.info("processing");
-
-		newIndividuals.forEach(newIndividual -> processor.process(newIndividual, initialGameState));
+		processor.process(newIndividuals, initialGameState);
 		return newIndividuals;
 	}
 
-	private List<Individual> mergeIndividuals(List<Individual> population, List<Individual> newIndividuals) {
-		int newPopulationSize = population.size();
+	private List<Individual> mergeIndividuals(
+			List<Individual> population,
+			List<Individual> newIndividuals) {
 
-		Stream<Individual> oldPopulationToKeep = population.stream()
-				.sorted(Comparator.comparingDouble(Individual::getEvaluation).reversed())
-				.limit(Math.round(population.size() * OLD_INDIVIDUALS_TO_KEEP_RATIO));
+		int populationSize = population.size();
+		int keepCount = (int) Math.round(populationSize * OLD_INDIVIDUALS_TO_KEEP_RATIO);
+		individualFactory.release(population.subList(0, populationSize - keepCount));
+		List<Individual> oldIndividualsToKeep = population.subList(populationSize - keepCount, populationSize);
 
-		return Stream.concat(oldPopulationToKeep, newIndividuals.stream())
-				.sorted(Comparator.comparingDouble(Individual::getEvaluation).reversed())
-				.limit(newPopulationSize)
-				.collect(Collectors.toList());
+		TreeSet<Individual> tree = new TreeSet<>(Comparator.comparingDouble(Individual::getEvaluation));
+		oldIndividualsToKeep.forEach(individual -> addOrRelease(tree, individual));
+		newIndividuals.forEach(individual -> addOrRelease(tree, individual));
+
+		List<Individual> sortedIndividuals = new ArrayList<>(tree);
+		int sortedIndividualsSize = sortedIndividuals.size();
+		if (sortedIndividualsSize <= populationSize) {
+			return sortedIndividuals;
+		} else {
+			individualFactory.release(sortedIndividuals.subList(0, sortedIndividualsSize - populationSize));
+			List<Individual> newPopulation = sortedIndividuals.subList(sortedIndividualsSize - populationSize,
+					sortedIndividualsSize);
+			return new ArrayList<>(newPopulation);
+		}
+	}
+
+	private void addOrRelease(TreeSet<Individual> tree, Individual individual) {
+		boolean added = tree.add(individual);
+		if (!added) {
+			individualFactory.release(individual);
+		}
 	}
 }

@@ -1,4 +1,4 @@
-package io.github.nicolasdesnoust.marslander.config;
+package io.github.nicolasdesnoust.marslander;
 
 import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.context.annotation.Bean;

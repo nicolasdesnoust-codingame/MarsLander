@@ -2,6 +2,7 @@ package io.github.nicolasdesnoust.marslander.logs;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.IndexOperations;
@@ -27,18 +28,18 @@ public class LogControllerREST {
 		List<LogRecord> marsSurface = logRepository.findByTypeOrderByIndexAsc("surface");
 		return ResponseEntity.ok(marsSurface);
 	}
-	
-	@GetMapping("/path")
-	public ResponseEntity<List<LogRecord>> getPath() {
-		List<LogRecord> path = logRepository.findByTypeOrderByIndexAsc("path");
-		return ResponseEntity.ok(path);
-	}
-	
-	@GetMapping("/path/points")
-	public ResponseEntity<List<LogRecord>> getPathPoints() {
-		List<LogRecord> pathPoints = logRepository.findByTypeOrderByIndexAsc("point");
-		return ResponseEntity.ok(pathPoints);
-	}
+
+//	@GetMapping("/path")
+//	public ResponseEntity<List<LogRecord>> getPath() {
+//		List<LogRecord> path = logRepository.findByTypeOrderByIndexAsc("path");
+//		return ResponseEntity.ok(path);
+//	}
+//
+//	@GetMapping("/path/points")
+//	public ResponseEntity<List<LogRecord>> getPathPoints() {
+//		List<LogRecord> pathPoints = logRepository.findByTypeOrderByIndexAsc("point");
+//		return ResponseEntity.ok(pathPoints);
+//	}
 
 	@PostMapping("/reset")
 	public ResponseEntity<Void> resetLogRepository() {
@@ -48,35 +49,17 @@ public class LogControllerREST {
 		return ResponseEntity.noContent().build();
 	}
 
-	@GetMapping("/generations/{generation}/distances")
-	public ResponseEntity<List<LogRecord>> getIndividualDistancesByGeneration(@PathVariable int generation) {
-		List<LogRecord> distances = logRepository.findByGenerationAndTypeStartsWithOrderByIndexAsc(
-				generation, "individualD-");
-		distances.sort(Comparator.comparingInt(LogRecord::getIndex));
-		return ResponseEntity.ok(distances);
-	}
-
-	@GetMapping("/best-solution")
-	public ResponseEntity<List<LogRecord>> getBestSolution() {
-		List<LogRecord> bestSolution = logRepository.findByTypeOrderByGenerationAsc("best-solution");
-		return ResponseEntity.ok(bestSolution);
-	}
-
-	@GetMapping("/generations/{generation}/individuals")
-	public ResponseEntity<List<LogRecord>> getIndividualsByGeneration(@PathVariable int generation) {
-		List<LogRecord> evaluations = logRepository.findByGenerationAndTypeStartsWithOrderByIndexAsc(
-				generation,
-				"evaluation");
-		return ResponseEntity.ok(evaluations);
-	}
-
 	@GetMapping("/generations/{generation}")
-	public ResponseEntity<List<LogRecord>> getGeneration(@PathVariable int generation) {
-		List<LogRecord> population = logRepository.findByGenerationAndTypeStartsWith(
-				generation, "individual-");
-
+	public ResponseEntity<List<LoggableIndividual>> getGeneration(@PathVariable int generation) {
+		List<LogRecord> logRecords = logRepository.findByGenerationAndType(generation, "individual");
+		
+		List<LoggableIndividual> population = logRecords.stream().map(LogRecord::getIndividual)
+				.sorted(Comparator.comparingDouble(LoggableIndividual::getEvaluation).reversed())
+				.collect(Collectors.toList());
+		population.forEach(individual -> individual.getCapsules()
+				.sort(Comparator.comparingInt(LoggableCapsule::getIndex)));
+		
 		return ResponseEntity.ok(population);
-
 	}
 
 	@GetMapping("/generations/_count")

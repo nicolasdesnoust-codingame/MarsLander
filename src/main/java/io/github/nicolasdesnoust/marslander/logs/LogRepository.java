@@ -12,7 +12,7 @@ public interface LogRepository extends ElasticsearchRepository<LogRecord, String
     long countByTypeAndGeneration(String type, int generation);
     List<LogRecord> findByTypeAndGenerationOrderByTimestampAsc(String type, int generation);
     List<LogRecord> findByGenerationOrderByTimestampAsc(int generation, Pageable pageable);
-    List<LogRecord> findByGenerationAndTypeStartsWithOrderByIndexAsc(int generation, String type);
+//    List<LogRecord> findByGenerationAndTypeStartsWithOrderByIndexAsc(int generation, String type);
     List<LogRecord> findByGenerationAndTypeStartsWith(int generation, String type);
     long countByGeneration(int generation);
     List<LogRecord> findByTypeOrderByGenerationAsc(String type);
@@ -20,4 +20,6 @@ public interface LogRepository extends ElasticsearchRepository<LogRecord, String
     @Query("Select count(distinct generation) from Table logRecord")
     long countDistinctGeneration();
 	List<LogRecord> findByTypeOrderByIndexAsc(String string);
+	
+    List<LogRecord> findByGenerationAndType(int generation, String type);
 }

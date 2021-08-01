@@ -6,37 +6,62 @@ import java.util.Arrays;
 import java.util.Objects;
 
 public class Individual {
-    private final Integer id;
+    private Integer id;
     private Gene[] genes;
-    private Capsule[] capsules;
+    private Capsule capsule;
     private double evaluation;
-    private boolean solution;
+    private double normalizedEvaluation;
 
     public Individual(int id, Gene[] genes) {
         this.id = id;
         this.genes = genes;
-        this.capsules = new Capsule[genes.length];
         this.evaluation = 0.0;
+    }
+
+    public double getNormalizedEvaluation() {
+        return normalizedEvaluation;
+    }
+
+    public void setNormalizedEvaluation(double normalizedEvaluation) {
+        this.normalizedEvaluation = normalizedEvaluation;
+    }
+
+    public Individual(Gene[] genes) {
+        this.genes = genes;
+    }
+
+    public Individual(Individual individual) {
+        this.id = individual.id;
+        this.genes = new Gene[individual.genes.length];
+        for (int i = 0; i < individual.genes.length; i++) {
+            this.genes[i] = new Gene(individual.genes[i]);
+        }
+        this.capsule = new Capsule(individual.capsule);
+        this.evaluation = individual.evaluation;
+        this.normalizedEvaluation = individual.normalizedEvaluation;
+    }
+
+    public Individual() {
     }
 
     public Integer getId() {
         return id;
     }
 
+    public void setId(int id) {
+        this.id = id;
+    }
+
     public Gene[] getGenes() {
         return genes;
     }
 
-    public void setGenes(Gene[] genes) {
-        this.genes = genes;
+    public Capsule getCapsule() {
+        return capsule;
     }
 
-    public Capsule[] getCapsules() {
-        return capsules;
-    }
-
-    public void setCapsules(Capsule[] capsules) {
-        this.capsules = capsules;
+    public void setCapsule(Capsule capsule) {
+        this.capsule = capsule;
     }
 
     public double getEvaluation() {
@@ -47,7 +72,6 @@ public class Individual {
         this.evaluation = evaluation;
     }
 
-    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -55,29 +79,15 @@ public class Individual {
         return id.equals(that.id);
     }
 
-    @Override
     public int hashCode() {
         return Objects.hash(id);
     }
 
-    @Override
     public String toString() {
         return "Individual{" +
                 "id=" + id +
                 ", genes=" + Arrays.toString(genes) +
                 ", evaluation=" + evaluation +
                 '}';
-    }
-
-    public Capsule getLastCapsule() {
-        return capsules[capsules.length - 1];
-    }
-
-    public boolean isSolution() {
-        return solution;
-    }
-
-    public void setSolution(boolean solution) {
-        this.solution = solution;
     }
 }

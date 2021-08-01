@@ -18,6 +18,30 @@ public class Vector {
         );
     }
 
+    public double dot(Vector other) {
+        return other.x * x + other.y * y;
+    }
+
+    public void normalize() {
+        double magnitude = getLength();
+        x /= magnitude;
+        y /= magnitude;
+    }
+
+    public double getLength() {
+        return Math.sqrt(x * x + y * y);
+    }
+
+    public void scale(double length) {
+        x *= length;
+        y *= length;
+    }
+
+    public void add(Point point) {
+        this.x += point.getX();
+        this.y += point.getY();
+    }
+    
     public double getX() {
         return x;
     }
@@ -53,29 +77,5 @@ public class Vector {
     @Override
     public int hashCode() {
         return Objects.hash(x, y);
-    }
-
-    public double dot(Vector other) {
-        return other.x * x + other.y * y;
-    }
-
-    public void normalize() {
-        double magnitude = getLength();
-        x /= magnitude;
-        y /= magnitude;
-    }
-
-    public double getLength() {
-        return Math.sqrt(x * x + y * y);
-    }
-
-    public void scale(double length) {
-        x *= length;
-        y *= length;
-    }
-
-    public void add(Point point) {
-        this.x += point.getX();
-        this.y += point.getY();
     }
 }

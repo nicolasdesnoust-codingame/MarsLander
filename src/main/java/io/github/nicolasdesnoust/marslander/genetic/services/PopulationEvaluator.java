@@ -3,45 +3,35 @@ package io.github.nicolasdesnoust.marslander.genetic.services;
 import java.util.List;
 
 import io.github.nicolasdesnoust.marslander.core.Capsule;
-import io.github.nicolasdesnoust.marslander.core.InitialGameState;
+import io.github.nicolasdesnoust.marslander.core.GameState;
 import io.github.nicolasdesnoust.marslander.genetic.model.Individual;
 import io.github.nicolasdesnoust.marslander.math.Point;
 import io.github.nicolasdesnoust.marslander.math.Segment;
 import io.github.nicolasdesnoust.marslander.solver.CapsuleService;
-import io.github.nicolasdesnoust.marslander.solver.MarsService;
 import io.github.nicolasdesnoust.marslander.solver.PathFinder;
 
 public class PopulationEvaluator {
-	private static final double DISTANCE_RATIO_MAXIMUM = 0.75;
-	private final PathFinder pathFinder = new PathFinder();
-	private final CapsuleService capsuleService = new CapsuleService();
-	private final MarsService marsService = new MarsService();
+	private static final double ROTATE_THRESHOLD = 0;
+	private static final int MAXIMUM_ACHIEVABLE_SPEED = 200;
+	private static final double MAXIMUM_ACHIEVABLE_ROTATE = 90;
+	private static final int MAXIMUM_EXTRA_V_SPEED = MAXIMUM_ACHIEVABLE_SPEED - CapsuleService.VERTICAL_SPEED_THRESHOLD;
+	private static final int MAXIMUM_EXTRA_H_SPEED = MAXIMUM_ACHIEVABLE_SPEED - CapsuleService.HORIZONTAL_SPEED_THRESHOLD;
+	private static final double MAXIMUM_EXTRA_ROTATE = MAXIMUM_ACHIEVABLE_ROTATE - ROTATE_THRESHOLD;
 
-	private double distanceCoeff;
-	private double heightWhereThereIsNoObstacleToLand;
+	private final PathFinder pathFinder;
+	private final CapsuleService capsuleService;
 
-	/**
-	 * - distance du lieu du crash par rapport à la zone d'atterissage - vitesses
-	 * une fois dans la zone d'atterissage - % de suivi du bon cheminement
-	 * pré-calculé : - pour 60 genes, si l'individu dévie du chemin (déviation min/
-	 * max à définir) 31 fois => % de suivi = 31 * 100 / 60 = 51.67% deux solutions
-	 * pourront ensuite être départagées en comparant leurs quantités de fuel
-	 * utilisées.
-	 * <p>
-	 * pas suffisant : prendre en compte la progression dans le cheminement (le
-	 * nombre de points dépassés).
-	 */
-	public void evaluate(List<Individual> population,
+	public PopulationEvaluator(
+			CapsuleService capsuleService,
+			PathFinder pathFinder) {
+		this.capsuleService = capsuleService;
+		this.pathFinder = pathFinder;
+	}
+
+	public void evaluate(
+			List<Individual> population,
 			List<Point> pathToFollow,
-			InitialGameState initialGameState,
-			int currentGeneration) {
-		if (heightWhereThereIsNoObstacleToLand == 0.0) {
-			this.heightWhereThereIsNoObstacleToLand = marsService.findHeightWhereThereIsNoObstacleToLand(
-					initialGameState.getMars().getSurface(),
-					initialGameState.getLandingArea());
-
-			distanceCoeff = computeDistanceCoeff(pathToFollow, initialGameState.getLandingArea());
-		}
+			GameState initialGameState) {
 
 		for (Individual individual : population) {
 			evaluateIndividual(individual, pathToFollow, initialGameState);
@@ -51,61 +41,70 @@ public class PopulationEvaluator {
 	private void evaluateIndividual(
 			Individual individual,
 			List<Point> pathToFollow,
-			InitialGameState initialGameState) {
+			GameState initialGameState) {
+
 		Segment landingArea = initialGameState.getLandingArea();
 		double distanceRatio;
-		double speedAndRotateRatio;
+		double speedRatio = 0.0;
+		double rotateRatio = 0.0;
+		double fuelRatio = 0.0;
 
-		Capsule lastCapsule = individual.getLastCapsule();
-		List<Point> path = pathFinder.findPath(lastCapsule, initialGameState);
-
-		if (capsuleService.isCapsuleAboveLandingArea(lastCapsule, landingArea)
-				&& lastCapsule.getPosition().getY() < heightWhereThereIsNoObstacleToLand) {
-			distanceRatio = DISTANCE_RATIO_MAXIMUM;
-			speedAndRotateRatio = computeSpeedAndRotateRatio(individual, distanceRatio);
+		Capsule lastCapsule = individual.getCapsule();
+		List<Segment> marsSurface = initialGameState.getMars().getSurface();
+		if (capsuleService.isCapsuleRightAboveLandingArea(lastCapsule, marsSurface, landingArea)) {
+			distanceRatio = 1.0;
+			speedRatio = computeSpeedRatio(individual);
+			rotateRatio = computeRotateRatio(individual);
+			if (speedRatio + rotateRatio >= 1.05) {
+				fuelRatio = computeFuelRatio(individual, initialGameState);
+			}
 		} else {
-			distanceRatio = distanceCoeff * computeDistanceRatio(pathToFollow, path);
-			speedAndRotateRatio = 0;
+			Capsule secondLastCapsule = new Capsule(lastCapsule);
+			capsuleService.rollbackPositionAndSpeedUpdate(secondLastCapsule);
+			List<Point> pathToLandingArea = pathFinder.findPath(secondLastCapsule, initialGameState);
+			distanceRatio = computeDistanceRatio(pathToFollow, pathToLandingArea);
 		}
 
-		individual.setEvaluation(distanceRatio + speedAndRotateRatio);
+		individual.setEvaluation(distanceRatio + speedRatio + rotateRatio + fuelRatio);
 	}
 
-	private double computeDistanceCoeff(List<Point> pathToFollow, Segment landingArea) {
-		double initialDistance = Point.computeDistance(pathToFollow);
-		double crashDistance = Point.distance(landingArea.getP1(), landingArea.getP2()) / 2.0;
-		return DISTANCE_RATIO_MAXIMUM * (1.0 - crashDistance / initialDistance);
-	}
-
-	/**
-	 * Si le chemin mene à la zone d'atterissage calculer le distanceRatio le plus
-	 * éloigné du centre dans cette zone
-	 */
 	private double computeDistanceRatio(List<Point> pathToFollow, List<Point> path) {
 		double initialDistance = Point.computeDistance(pathToFollow);
 		double crashDistance = Point.computeDistance(path);
-		return 1.0 - Math.min(crashDistance, initialDistance) / initialDistance;
+
+		return 1.0 - Math.min(crashDistance, (initialDistance - 0.000001)) / initialDistance;
 	}
 
-	private double computeSpeedAndRotateRatio(Individual individual, double distanceRatio) {
-		int geneCount = individual.getGenes().length;
-		Capsule lastCapsule = individual.getCapsules()[geneCount - 1];
+	private double computeSpeedRatio(Individual individual) {
+		Capsule lastCapsule = individual.getCapsule();
 
-		double availableRatio = 1 - distanceRatio;
+		double absoluteHSpeed = Math.abs(lastCapsule.gethSpeed());
+		double absoluteVSpeed = Math.abs(lastCapsule.getvSpeed());
 
-		double speedMax = 200;
-		double rotateMax = 90;
+		double extraHSpeed = Math.max(absoluteHSpeed - CapsuleService.HORIZONTAL_SPEED_THRESHOLD, 0);
+		double extraVSpeed = Math.max(absoluteVSpeed - CapsuleService.VERTICAL_SPEED_THRESHOLD, 0);
 
-		double deltaH = Math.abs(Math.min(20.0 - Math.abs(lastCapsule.gethSpeed()), 0));
-		double deltaV = Math.abs(Math.min(40.0 - Math.abs(lastCapsule.getvSpeed()), 0)); // 53.90
-		double deltaRotate = Math.abs(Math.min(15 - Math.abs(lastCapsule.getRotate()), 0));
+		double deltaHRatio = 1 - extraHSpeed / MAXIMUM_EXTRA_H_SPEED;
+		double deltaVRatio = 1 - extraVSpeed / MAXIMUM_EXTRA_V_SPEED;
 
-		double deltaHRatio = 1 - deltaH / (speedMax - 20); // 1
-		double deltaVRatio = 1 - deltaV / (speedMax - 40); // 0.66
-		double deltaRotateRatio = 1 - deltaRotate / (rotateMax - 15); // 1
+		return deltaHRatio * 0.5 + deltaVRatio * 0.5;
+	}
 
-		double ratio = deltaHRatio * 0.5 + deltaVRatio * 0.5 + deltaRotateRatio * 0; // 0.45 + 0.45 + 0.066
-		return ratio * availableRatio;
+	private double computeRotateRatio(Individual individual) {
+		Capsule lastCapsule = individual.getCapsule();
+
+		double absoluteRotate = Math.abs(lastCapsule.getRotate());
+		double extraRotate = Math.max(absoluteRotate - ROTATE_THRESHOLD, 0);
+		double deltaRotateRatio = 1 - extraRotate / MAXIMUM_EXTRA_ROTATE;
+
+		return deltaRotateRatio * 0.05;
+	}
+
+	private double computeFuelRatio(Individual individual, GameState gameState) {
+		double initialFuel = gameState.getCapsule().getFuel();
+		double lastFuel = individual.getCapsule().getFuel();
+
+		return lastFuel / initialFuel;
 	}
 
 }

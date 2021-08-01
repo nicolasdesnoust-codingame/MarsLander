@@ -1,4 +1,4 @@
-package io.github.nicolasdesnoust.marslander.config;
+package io.github.nicolasdesnoust.marslander;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;

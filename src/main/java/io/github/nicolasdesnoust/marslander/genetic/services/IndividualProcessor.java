@@ -1,41 +1,52 @@
 package io.github.nicolasdesnoust.marslander.genetic.services;
 
+import java.util.List;
+
 import io.github.nicolasdesnoust.marslander.core.Capsule;
-import io.github.nicolasdesnoust.marslander.core.InitialGameState;
+import io.github.nicolasdesnoust.marslander.core.GameState;
 import io.github.nicolasdesnoust.marslander.genetic.model.Gene;
 import io.github.nicolasdesnoust.marslander.genetic.model.Individual;
-import io.github.nicolasdesnoust.marslander.math.Segment;
+import io.github.nicolasdesnoust.marslander.logs.IndividualLogger;
 import io.github.nicolasdesnoust.marslander.solver.CapsuleService;
-import io.github.nicolasdesnoust.marslander.solver.MarsService;
 
 public class IndividualProcessor {
-    private final CapsuleService capsuleService = new CapsuleService();
-    private final MarsService marsService = new MarsService();
-    private double heightWhereThereIsNoObstacleToLand;
+	private final CapsuleService capsuleService;
+	private final IndividualLogger individualLogger;
 
-    public void process(Individual individual, InitialGameState initialGameState) {
-        if (heightWhereThereIsNoObstacleToLand == 0.0) {
-            this.heightWhereThereIsNoObstacleToLand = marsService.findHeightWhereThereIsNoObstacleToLand(
-                    initialGameState.getMars().getSurface(),
-                    initialGameState.getLandingArea());
-        }
+	public IndividualProcessor(
+			CapsuleService capsuleService, 
+			IndividualLogger individualLogger) {
+		this.capsuleService = capsuleService;
+		this.individualLogger = individualLogger;
+	}
 
-        Capsule capsuleCopy = new Capsule(initialGameState.getCapsule());
+	public void process(List<Individual> population, GameState initialGameState) {
+		population.forEach(individual -> processIndividual(individual, initialGameState));
+	}
 
-        for (int i = 0; i < individual.getGenes().length; i++) {
-            Gene gene = individual.getGenes()[i];
-            int requestedRotate = capsuleCopy.getRotate() + gene.getRotateIncrement();
-            int requestedPower = capsuleCopy.getPower() + gene.getPowerIncrement();
+	private void processIndividual(
+			Individual individual,
+			GameState initialGameState) {
 
-            capsuleService.updateCapsuleState(capsuleCopy, requestedRotate, requestedPower, initialGameState);
-            individual.setSolution(isCapsuleASolution(capsuleCopy, initialGameState.getLandingArea()));
-            individual.getCapsules()[i] = capsuleCopy;
-        }
-    }
+		Capsule capsuleCopy = new Capsule(initialGameState.getCapsule());
+		
+		individualLogger.storeIndividual(individual);
 
-    public boolean isCapsuleASolution(Capsule capsule, Segment landingArea) {
-        return capsuleService.isCapsuleAboveLandingArea(capsule, landingArea)
-                && capsule.getPosition().getY() < heightWhereThereIsNoObstacleToLand
-                && capsuleService.couldCapsuleLand(capsule);
-    }
+		Gene[] genes = individual.getGenes();
+		for (int i = 0; i < genes.length; i++) {
+			Gene gene = genes[i];
+			int requestedRotate = capsuleCopy.getRotate() + gene.getRotateIncrement();
+			int requestedPower = capsuleCopy.getPower() + gene.getPowerIncrement();
+
+			capsuleService.updateCapsuleState(capsuleCopy, requestedRotate, requestedPower, initialGameState);
+
+			individualLogger.storeCapsuleOf(individual.getId(), capsuleCopy);
+			
+			if (capsuleCopy.getLandingState().isTerminalState()) {
+				break;
+			}
+		}
+		individual.setCapsule(capsuleCopy);
+	}
+
 }

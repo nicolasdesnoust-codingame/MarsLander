@@ -1,11 +1,12 @@
-package io.github.nicolasdesnoust.marslander.config;
+package io.github.nicolasdesnoust.marslander;
 
 public class SolverConfiguration {
     private String testCase;
     private int populationSize;
-    private int generations;
     private int numberOfSelections;
     private int numberOfGenesPerIndividual;
+	private int restartGenericTurn;
+	private boolean restartGeneric;
     
 	public String getTestCase() {
 		return testCase;
@@ -19,12 +20,6 @@ public class SolverConfiguration {
 	public void setPopulationSize(int populationSize) {
 		this.populationSize = populationSize;
 	}
-	public int getGenerations() {
-		return generations;
-	}
-	public void setGenerations(int generations) {
-		this.generations = generations;
-	}
 	public int getNumberOfSelections() {
 		return numberOfSelections;
 	}
@@ -36,5 +31,17 @@ public class SolverConfiguration {
 	}
 	public void setNumberOfGenesPerIndividual(int numberOfGenesPerIndividual) {
 		this.numberOfGenesPerIndividual = numberOfGenesPerIndividual;
+	}
+	public int getRestartGenericTurn() {
+		return restartGenericTurn;
+	}
+	public void setRestartGenericTurn(int restartGenericTurn) {
+		this.restartGenericTurn = restartGenericTurn;
+	}
+	public boolean isRestartGeneric() {
+		return restartGeneric;
+	}
+	public void setRestartGeneric(boolean restartGeneric) {
+		this.restartGeneric = restartGeneric;
 	}
 }
