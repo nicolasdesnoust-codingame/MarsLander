@@ -10,15 +10,19 @@ import io.github.nicolasdesnoust.marslander.math.Segment;
 import io.github.nicolasdesnoust.marslander.solver.MarsService;
 
 public class GameStateParser {
-	private final MarsService marsService = new MarsService();
-	
-    public InitialGameState parseInitialGameState(InputStream gameStateAsInputStream) {
+    private final MarsService marsService;
+
+    public GameStateParser(MarsService marsService) {
+        this.marsService = marsService;
+    }
+    
+    public GameState parseInitialGameState(InputStream gameStateAsInputStream) {
         try (Scanner in = new Scanner(gameStateAsInputStream)) {
             return parseInitialGameState(in);
         }
     }
 
-    public InitialGameState parseInitialGameState(Scanner in) {
+    public GameState parseInitialGameState(Scanner in) {
         int surfaceSize = in.nextInt();
         List<Segment> marsSurface = new ArrayList<>(surfaceSize);
 
@@ -33,17 +37,17 @@ public class GameStateParser {
         Mars mars = new Mars(marsSurface);	
         Segment landingArea = marsService.findLandingArea(mars);
   
-        return new InitialGameState(mars, initialCapsule, landingArea);
+        return new GameState(mars, initialCapsule, landingArea);
     }
 
     public Capsule parseCurrentTurnState(Scanner in) {
         int x = in.nextInt();
         int y = in.nextInt();
-        int hSpeed = in.nextInt(); // the horizontal speed (in m/s), can be negative.
-        int vSpeed = in.nextInt(); // the vertical speed (in m/s), can be negative.
-        int fuel = in.nextInt(); // the quantity of remaining fuel in liters.
-        int rotate = in.nextInt(); // the rotation angle in degrees (-90 to 90).
-        int power = in.nextInt(); // the thrust power (0 to 4).
+        int hSpeed = in.nextInt(); 
+        int vSpeed = in.nextInt(); 
+        int fuel = in.nextInt();
+        int rotate = in.nextInt();
+        int power = in.nextInt();
 
         return new Capsule(x, y, hSpeed, vSpeed, fuel, rotate, power);
     }

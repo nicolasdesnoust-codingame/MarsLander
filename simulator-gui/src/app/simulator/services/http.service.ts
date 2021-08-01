@@ -3,9 +3,9 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map, shareReplay } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
-import { Gene } from './model/gene';
-import { Individual } from './model/individual';
-import { Point } from './model/point';
+import { Capsule } from '../model/capsule';
+import { Individual } from '../model/individual';
+import { Point } from '../model/point';
 
 @Injectable({
   providedIn: 'root',
@@ -29,8 +29,7 @@ export class HttpService {
   }
 
   private requestMarsSurface(): Observable<Point[]> {
-    return this.http
-      .get<Point[]>(`${this.baseURL}/search/surface`);
+    return this.http.get<Point[]>(`${this.baseURL}/search/surface`);
   }
 
   getGeneration(generation: number): Observable<Individual[]> {
@@ -45,39 +44,14 @@ export class HttpService {
   }
 
   private requestGeneration(generation: number): Observable<Individual[]> {
-    return this.http
-      .get<Individual[]>(`${this.baseURL}/search/generations/${generation}`)
-      .pipe(
-        map((individuals) => {
-          return individuals.map((individual) => {
-            individual.genes.sort((p1: Gene, p2: Gene) => p1.index - p2.index);
-            return individual;
-          });
-        })
-      );
-  }
-
-  getBestSolution(): Observable<Point[]> {
-    if (!this.cache.has(`bestSolution`)) {
-      this.cache.set(
-        `bestSolution`,
-        this.requestBestSolution().pipe(shareReplay(1))
-      );
-    }
-
-    return this.cache.get(`bestSolution`);
-  }
-
-  private requestBestSolution(): Observable<Point[]> {
-    return this.http.get<Point[]>(`${this.baseURL}/search/best-solution`);
+    return this.http.get<Individual[]>(
+      `${this.baseURL}/search/generations/${generation}`
+    );
   }
 
   getPath(): Observable<Point[]> {
     if (!this.cache.has(`path`)) {
-      this.cache.set(
-        `path`,
-        this.requestPath().pipe(shareReplay(1))
-      );
+      this.cache.set(`path`, this.requestPath().pipe(shareReplay(1)));
     }
 
     return this.cache.get(`path`);
@@ -107,7 +81,7 @@ export class HttpService {
   }
 
   runSimulation(): Observable<void> {
-    return this.http.post<void>(`${this.baseURL}/search/_run-simulation`, {
+    return this.http.post<void>(`${this.baseURL}/simulations`, {
       testCase: 'test-case-04',
       populationSize: 150,
       generations: 1,
@@ -118,17 +92,5 @@ export class HttpService {
 
   getGenerationCount(): Observable<number> {
     return this.http.get<number>(`${this.baseURL}/search/generations/_count`);
-  }
-
-  getEvaluations(generation: number): Observable<any> {
-    return this.http.get<any>(
-      `${this.baseURL}/search/generations/${generation}/individuals`
-    );
-  }
-
-  getDistances(generation: number): Observable<any> {
-    return this.http.get<any>(
-      `${this.baseURL}/search/generations/${generation}/distances`
-    );
   }
 }

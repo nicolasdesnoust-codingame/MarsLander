@@ -1,89 +1,149 @@
 package io.github.nicolasdesnoust.marslander.solver.strategies;
 
-import io.github.nicolasdesnoust.marslander.config.SolverConfiguration;
-import io.github.nicolasdesnoust.marslander.core.Capsule;
-import io.github.nicolasdesnoust.marslander.core.InitialGameState;
-import io.github.nicolasdesnoust.marslander.genetic.GeneticAlgorithm;
-import io.github.nicolasdesnoust.marslander.genetic.model.Individual;
-import io.github.nicolasdesnoust.marslander.solver.MovementInstructions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
 
-import static net.logstash.logback.argument.StructuredArguments.kv;
+import io.github.nicolasdesnoust.marslander.SolverConfiguration;
+import io.github.nicolasdesnoust.marslander.core.Capsule;
+import io.github.nicolasdesnoust.marslander.core.GameState;
+import io.github.nicolasdesnoust.marslander.core.LandingState;
+import io.github.nicolasdesnoust.marslander.genetic.GeneticAlgorithm;
+import io.github.nicolasdesnoust.marslander.genetic.IndividualFactory;
+import io.github.nicolasdesnoust.marslander.genetic.model.Gene;
+import io.github.nicolasdesnoust.marslander.genetic.model.Individual;
+import io.github.nicolasdesnoust.marslander.solver.CapsuleService;
+import io.github.nicolasdesnoust.marslander.solver.MovementInstructions;
 
 public class GeneticMovementStrategy implements MovementStrategy {
-    private static final Logger log = LoggerFactory.getLogger(GeneticMovementStrategy.class);
+	public static final String STRATEGY_KEY = "GENETIC";
+	private final SolverConfiguration configuration;
+	private final GeneticAlgorithm geneticAlgorithm;
+	private final CapsuleService capsuleService;
+	private final IndividualFactory individualFactory;
+	private Individual currentSolution;
+	private List<Individual> currentPopulation;
 
-    private final InitialGameState initialGameState;
-    private final SolverConfiguration configuration;
-    private Individual solution;
+	private int attemptCount = 0;
+	private int currentGeneIndex = 0;
 
-    public GeneticMovementStrategy(InitialGameState initialGameState, SolverConfiguration configuration) {
-        this.initialGameState = initialGameState;
-        this.configuration = configuration;
-    }
+	public GeneticMovementStrategy(
+			SolverConfiguration configuration,
+			GeneticAlgorithm geneticAlgorithm,
+			CapsuleService capsuleService,
+			IndividualFactory individualFactory) {
+		this.configuration = configuration;
+		this.geneticAlgorithm = geneticAlgorithm;
+		this.capsuleService = capsuleService;
+		this.individualFactory = individualFactory;
+	}
 
-    private static Optional<Individual> findBestSolution(List<Individual> population) {
-        return population.stream()
-                .filter(Individual::isSolution)
-                .max(Comparator.comparingDouble(Individual::getEvaluation));
-    }
+	public MovementInstructions findMovementInstructions(Capsule capsule, int turn, GameState initialGameState) {
+		int restartGenericTurn = configuration.getRestartGenericTurn();
 
-    private static Optional<Individual> findViableSolution(List<Individual> population) {
-        return population.stream()
-                .max(Comparator.comparingDouble(Individual::getEvaluation));
-    }
+		if (turn == 0) {
+			currentSolution = new Individual(findATemporarySolution(initialGameState));
+			// System.err.println("Initial solution evaluation : "
+			// + currentSolution.getEvaluation()
+			// + ", fuel: " + currentSolution.getCapsule().getFuel()
+			// + ", ls: " + currentSolution.getCapsule().getLandingState());
+		} else if (configuration.isRestartGeneric()) {
+			if (turn == 1 + restartGenericTurn * attemptCount) {
+				currentPopulation = initializeNewPopulation(initialGameState, capsule, turn);
+				improveNewPopulation(initialGameState, currentPopulation);
+			} else if (turn >= 2 + restartGenericTurn * attemptCount
+					&& turn <= restartGenericTurn * (attemptCount + 1) - 1) {
+				improveNewPopulation(initialGameState, currentPopulation);
+			} else if (turn == restartGenericTurn * (attemptCount + 1)) {
+				Individual newSolution = new Individual(findASolutionIn(currentPopulation));
+				// System.err.println("Old solution evaluation : " +
+				// currentSolution.getEvaluation() + ", fuel: " +
+				// currentSolution.getCapsule().getFuel());
+				// System.err.println("New solution evaluation : " + newSolution.getEvaluation()
+				// + ", fuel: " + newSolution.getCapsule().getFuel());
+				currentSolution = getBestOf(currentSolution, newSolution);
+				attemptCount++;
+			}
+		}
+		return getMovementInstructionsFrom(capsule, currentSolution, turn);
+	}
 
-    private static void logBestSolutionFound(Individual bestSolutionFound) {
-        for (int i = 0; i < bestSolutionFound.getCapsules().length; i++) {
-            log.info("{}: {} {}",
-                    kv("type", "best-solution"),
-                    kv("generation", i),
-                    kv("capsule", bestSolutionFound.getCapsules()[i]));
-        }
-    }
+	private Individual findATemporarySolution(GameState initialGameState) {
+		List<Individual> population = geneticAlgorithm.initializePopulation(configuration, initialGameState);
+		population = geneticAlgorithm.improvePopulation(population, configuration, initialGameState);
 
-    @Override
-    public MovementInstructions findMovementInstructions(Capsule capsule, int turn) {
-        if (solution == null) {
-            solution = findASolution();
-            logBestSolutionFound(solution);
-        }
+		return findASolutionIn(population);
+	}
 
-        int nextPower = capsule.getPower() + solution.getGenes()[turn].getPowerIncrement();
-        nextPower = Math.min(Math.max(nextPower, 0), 4);
-        int nextRotate = capsule.getRotate() + solution.getGenes()[turn].getRotateIncrement();
-        nextRotate = Math.min(Math.max(nextRotate, -90), 90);
+	private List<Individual> initializeNewPopulation(GameState initialGameState, Capsule capsule, int turn) {
+		Capsule newInitialCapsule = new Capsule(capsule);
+		Gene[] genes = currentSolution.getGenes();
+		int restartGenericTurn = configuration.getRestartGenericTurn();
+		for (int i = currentGeneIndex; i < currentGeneIndex + restartGenericTurn - 1; i++) {
+			Gene gene = genes[i];
+			int requestedRotate = newInitialCapsule.getRotate() + gene.getRotateIncrement();
+			int requestedPower = newInitialCapsule.getPower() + gene.getPowerIncrement();
+			capsuleService.updateCapsuleState(newInitialCapsule, requestedRotate, requestedPower, initialGameState);
+		}
+		initialGameState.setCapsule(newInitialCapsule);
+		return geneticAlgorithm.initializePopulation(configuration, initialGameState);
+	}
 
-        return new MovementInstructions(nextRotate, nextPower);
-    }
+	private Individual findASolutionIn(List<Individual> population) {
+		Individual solution = findBestSolution(population)
+				.orElseThrow(() -> new RuntimeException("No solution found"));
+		individualFactory.release(population);
+		return solution;
+	}
 
-    private Individual findASolution() {
-        GeneticAlgorithm geneticAlgorithm = new GeneticAlgorithm(initialGameState);
-        List<Individual> population = geneticAlgorithm.findBestPopulation(configuration);
+	private static Optional<Individual> findBestSolution(List<Individual> population) {
+		return population.stream()
+				.max(Comparator.comparingDouble(Individual::getEvaluation));
+	}
 
-        return Stream.of(
-                findBestSolution(population),
-                findViableSolution(population))
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("No solution found using genetic algorithm"));
-    }
+	private void improveNewPopulation(GameState initialGameState, List<Individual> population) {
+		currentPopulation = geneticAlgorithm.improvePopulation(
+				population,
+				configuration,
+				initialGameState);
+	}
 
-    @Override
-    public boolean doesSolutionNeedAssistance() {
-        if (solution != null) {
-            Capsule lastCapsule = solution.getLastCapsule();
-            return Math.abs(lastCapsule.getRotate()) > 15
-                    || Math.abs(lastCapsule.gethSpeed()) > 20
-                    || Math.abs(lastCapsule.getvSpeed()) > 40;
-        }
-        return false;
-    }
+	private MovementInstructions getMovementInstructionsFrom(Capsule capsule, Individual solution, int turn) {
+		Gene currentGene = solution.getGenes()[currentGeneIndex];
+		int nextPower = capsule.getPower() + currentGene.getPowerIncrement();
+		nextPower = Math.min(Math.max(nextPower, 0), 4);
+		int nextRotate = capsule.getRotate() + currentGene.getRotateIncrement();
+		nextRotate = Math.min(Math.max(nextRotate, -90), 90);
+		currentGeneIndex++;
+		return new MovementInstructions(nextRotate, nextPower);
+	}
+
+	private Individual getBestOf(Individual solution1, Individual solution2) {
+		if (solution1.getCapsule().getLandingState() == LandingState.LANDED
+				&& solution2.getCapsule().getLandingState() != LandingState.LANDED) {
+			return solution1;
+		} else if (solution1.getCapsule().getLandingState() != LandingState.LANDED
+				&& solution2.getCapsule().getLandingState() == LandingState.LANDED) {
+			currentGeneIndex = 0;
+			return solution2;
+		}
+		if (solution1.getEvaluation() >= 2.05 && solution2.getEvaluation() >= 2.05) {
+			if (solution1.getCapsule().getFuel() >= solution2.getCapsule().getFuel()) {
+				return solution1;
+			} else {
+				currentGeneIndex = 0;
+				return solution2;
+			}
+		} else if (solution1.getEvaluation() >= solution2.getEvaluation()) {
+			return solution1;
+		} else {
+			currentGeneIndex = 0;
+			return solution2;
+		}
+	}
+
+	public boolean doesSolutionNeedAssistance() {
+		return currentSolution.getCapsule().getLandingState() != LandingState.LANDED;
+	}
+
 }

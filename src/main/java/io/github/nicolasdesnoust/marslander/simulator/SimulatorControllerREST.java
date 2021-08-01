@@ -9,20 +9,21 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.github.nicolasdesnoust.marslander.config.SolverConfiguration;
+import io.github.nicolasdesnoust.marslander.SolverConfiguration;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/simulator")
+@RequestMapping("/api/simulations")
 @RequiredArgsConstructor
 public class SimulatorControllerREST {
 
 	private final SimulatorService simulationService;
 
     @Async
-    @PostMapping("/_run")
+    @PostMapping
     public ResponseEntity<Void> runSimulation(@RequestBody SolverConfiguration configuration)
             throws IOException, InterruptedException {
+    	
         simulationService.runSimulation(configuration);
         return ResponseEntity.noContent().build();
     }

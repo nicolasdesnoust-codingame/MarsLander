@@ -15,27 +15,29 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Document(indexName = "marslander-logs")
-@Getter @Setter
+@Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonInclude(Include.NON_NULL)
 public class LogRecord {
-    @Id
-    @JsonIgnore
-    private String id;
-    private String type;
-    @JsonIgnore
-    @Field(name = "@timestamp")
-    private String timestamp;
-    private Integer y;
-    private Integer x;
-    private Integer turn;
-    @JsonIgnore
-    private String message;
-    private Integer generation;
-    private Integer geneIndex;
-    private Integer index;
-    private Capsule capsule;
-    private Double evaluation;
-    private LoggableGene[] genes;
+	@Id
+	@JsonIgnore
+	private String id;
+	@JsonIgnore
+	private String type;
+	@JsonIgnore
+	@Field(name = "@timestamp")
+	private String timestamp;
+	@JsonIgnore
+	private String message;
+	private Integer turn;
+
+	private Integer y;
+	private Integer x;
+	private Integer generation;
+//	private Integer geneIndex;
+	private Integer index;
+	private Capsule capsule;
+	private LoggableIndividual individual;
 }

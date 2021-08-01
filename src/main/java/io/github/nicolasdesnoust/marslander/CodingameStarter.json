@@ -1,5 +1,5 @@
 {
-  "name" : "Task",
+  "name" : "CodingameStarter",
   "testType" : "SINGLE",
   "input" : {
     "type" : "STANDARD",
@@ -13,11 +13,11 @@
   "location" : "src/main/java/io/github/nicolasdesnoust/marslander",
   "vmArgs" : "-Xmx256m -Xss64m",
   "mainClass" : "Player",
-  "taskClass" : "io.github.nicolasdesnoust.marslander.Task",
+  "taskClass" : "io.github.nicolasdesnoust.marslander.CodingameStarter",
   "checkerClass" : "net.egork.chelper.checkers.TokenChecker",
   "checkerParameters" : "",
   "testClasses" : [ ],
-  "date" : "2021.06.19",
+  "date" : "2021.07.26",
   "contestName" : "MarsLander",
   "truncate" : true,
   "inputClass" : "java.util.Scanner",

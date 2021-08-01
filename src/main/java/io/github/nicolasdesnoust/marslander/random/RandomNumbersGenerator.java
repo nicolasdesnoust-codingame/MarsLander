@@ -1,18 +1,18 @@
 package io.github.nicolasdesnoust.marslander.random;
 
-import java.util.Random;
+import java.util.SplittableRandom;
 
 public class RandomNumbersGenerator {
-    private static final Random random = new Random();
+	private static final SplittableRandom splittableRandom = new SplittableRandom();
 
     private RandomNumbersGenerator() {
     }
 
     public static int generateRandomIntInRange(int min, int max) {
-        return random.nextInt((max - min) + 1) + min;
+        return splittableRandom.nextInt(min, max + 1);
     }
 
-    public static double generateRandomDoubleInRange(int min, int max) {
-        return min + (max - min) * random.nextDouble();
+    public static double generateRandomDoubleInRange(double min, double max) {
+        return splittableRandom.nextDouble(min, max);
     }
 }

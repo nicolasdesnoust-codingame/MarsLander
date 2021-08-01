@@ -1,15 +1,14 @@
 <span class="generation-count">Génération {{ currentGeneration }}</span>
-<span
-  class="generations-loading-status"
-  *ngIf="generationsLoadingPercentage != 100"
-  >Chargement en cours... {{ generationsLoadingPercentage }}%</span
->
-<span class="best-solution-status" *ngIf="!bestSolutionFound">
-  No solution found
-</span>
+<ng-container *ngIf="loadingPercentage$ | async as loadingPercentage">
+  <span class="generations-loading-status" *ngIf="loadingPercentage != 1">
+    Chargement en cours... {{ loadingPercentage | percent:'2.0-2' }}
+  </span>
+</ng-container>
 <div class="current-best-solutions">
   <p *ngFor="let solution of currentBestSolutions">
-    eval: {{ solution.evaluation }} individu: {{ solution.type }}
+    individu: {{ solution.individualId }}
+    eval: {{ solution.evaluation | number: '1.0-3' }}
+    fuel: {{ solution.capsules[solution.capsules.length - 1].fuel }}
   </p>
 </div>
 <button
@@ -27,7 +26,7 @@
   [(value)]="currentGeneration"
   tickInterval="1000"
   [step]="generationIncrement"
-  min="0"
+  min="firstGeneration"
   [max]="generationCount"
   aria-label="units"
 ></mat-slider>
