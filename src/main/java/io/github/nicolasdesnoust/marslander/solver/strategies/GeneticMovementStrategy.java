@@ -70,7 +70,7 @@ public class GeneticMovementStrategy implements MovementStrategy {
 
 	private Individual findATemporarySolution(GameState initialGameState) {
 		List<Individual> population = geneticAlgorithm.initializePopulation(configuration, initialGameState);
-		population = geneticAlgorithm.improvePopulation(population, configuration, initialGameState);
+		population = geneticAlgorithm.improvePopulation(population, initialGameState, configuration);
 
 		return findASolutionIn(population);
 	}
@@ -86,7 +86,8 @@ public class GeneticMovementStrategy implements MovementStrategy {
 			capsuleService.updateCapsuleState(newInitialCapsule, requestedRotate, requestedPower, initialGameState);
 		}
 		initialGameState.setCapsule(newInitialCapsule);
-		return geneticAlgorithm.initializePopulation(configuration, initialGameState);
+//		Individual individualToInject = new Individual(currentSolution, currentGeneIndex + restartGenericTurn - 1);
+		return geneticAlgorithm.initializePopulation(configuration, initialGameState, null);
 	}
 
 	private Individual findASolutionIn(List<Individual> population) {
@@ -104,8 +105,8 @@ public class GeneticMovementStrategy implements MovementStrategy {
 	private void improveNewPopulation(GameState initialGameState, List<Individual> population) {
 		currentPopulation = geneticAlgorithm.improvePopulation(
 				population,
-				configuration,
-				initialGameState);
+				initialGameState,
+				configuration);
 	}
 
 	private MovementInstructions getMovementInstructionsFrom(Capsule capsule, Individual solution, int turn) {

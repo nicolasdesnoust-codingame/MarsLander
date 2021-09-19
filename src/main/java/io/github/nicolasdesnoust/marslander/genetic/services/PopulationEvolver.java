@@ -5,10 +5,10 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.TreeSet;
 
+import io.github.nicolasdesnoust.marslander.SolverConfiguration;
 import io.github.nicolasdesnoust.marslander.core.GameState;
 import io.github.nicolasdesnoust.marslander.genetic.IndividualFactory;
 import io.github.nicolasdesnoust.marslander.genetic.model.Individual;
-import io.github.nicolasdesnoust.marslander.logs.IndividualLogger;
 import io.github.nicolasdesnoust.marslander.math.Point;
 import io.github.nicolasdesnoust.marslander.solver.PathFinder;
 
@@ -23,7 +23,7 @@ public class PopulationEvolver {
 	private final IndividualProcessor processor;
 	private final IndividualFactory individualFactory;
 	private final PathFinder pathFinder;
-	private final IndividualLogger individualLogger;
+	private final PopulationGenerator generator;
 
 	private List<Point> pathToFollow;
 
@@ -35,8 +35,8 @@ public class PopulationEvolver {
 			EvaluationNormalizer normalizer,
 			PopulationSelector selector,
 			IndividualProcessor processor,
-			PathFinder pathFinder, 
-			IndividualLogger individualLogger) {
+			PathFinder pathFinder,
+			PopulationGenerator generator) {
 		this.crosser = crosser;
 		this.mutator = mutator;
 		this.individualFactory = individualFactory;
@@ -45,11 +45,12 @@ public class PopulationEvolver {
 		this.selector = selector;
 		this.processor = processor;
 		this.pathFinder = pathFinder;
-		this.individualLogger = individualLogger;
+		this.generator = generator;
 	}
 
-	public void updateInitialGameState(GameState initialGameState) {
+	public List<Point> updateInitialGameState(GameState initialGameState) {
 		this.pathToFollow = pathFinder.findPath(initialGameState.getCapsule(), initialGameState);
+		return pathToFollow;
 	}
 
 	/**
@@ -57,16 +58,9 @@ public class PopulationEvolver {
 	 */
 	public List<Individual> evolve(
 			List<Individual> population,
-			int numberOfSelections,
 			int currentGeneration,
 			GameState initialGameState,
-			boolean needEvaluation) {
-
-		if (needEvaluation) {
-			evaluator.evaluate(population, pathToFollow, initialGameState);
-			individualLogger.addMissingEvaluations(population);
-			population.sort(Comparator.comparingDouble(Individual::getEvaluation));
-		}
+			SolverConfiguration configuration) {
 
 		boolean rankBased = true;
 		if (currentGeneration == 100) {
@@ -75,27 +69,23 @@ public class PopulationEvolver {
 
 		List<Individual> newIndividuals = makeNewIndividuals(
 				population,
-				numberOfSelections,
 				initialGameState,
 				rankBased);
 		evaluator.evaluate(newIndividuals, pathToFollow, initialGameState);
-		individualLogger.addMissingEvaluations(newIndividuals);
-		
-		List<Individual> newPopulation = mergeIndividuals(population, newIndividuals);
-		individualLogger.logGeneration(newPopulation, currentGeneration);
-		return newPopulation;
+
+		return mergeIndividuals(population, newIndividuals, configuration, initialGameState);
 	}
 
 	private List<Individual> makeNewIndividuals(
 			List<Individual> population,
-			int numberOfSelections,
 			GameState initialGameState,
 			boolean rankBased) {
 
 		normalizer.normalizeEvaluations(population, rankBased);
 
-		List<Individual> newIndividuals = new ArrayList<>(numberOfSelections * 2);
-		for (int j = 0; j < numberOfSelections; j++) {
+		int selectionCount = population.size() / 2;
+		List<Individual> newIndividuals = new ArrayList<>(selectionCount * 2);
+		for (int j = 0; j < selectionCount; j++) {
 			List<Individual> selectedIndividuals = selector.selectTwoIndividualsRandomly(population);
 			newIndividuals.addAll(crosser.crossover(
 					selectedIndividuals.get(0),
@@ -108,7 +98,9 @@ public class PopulationEvolver {
 
 	private List<Individual> mergeIndividuals(
 			List<Individual> population,
-			List<Individual> newIndividuals) {
+			List<Individual> newIndividuals,
+			SolverConfiguration configuration,
+			GameState gameState) {
 
 		int populationSize = population.size();
 		int keepCount = (int) Math.round(populationSize * OLD_INDIVIDUALS_TO_KEEP_RATIO);
@@ -118,6 +110,15 @@ public class PopulationEvolver {
 		TreeSet<Individual> tree = new TreeSet<>(Comparator.comparingDouble(Individual::getEvaluation));
 		oldIndividualsToKeep.forEach(individual -> addOrRelease(tree, individual));
 		newIndividuals.forEach(individual -> addOrRelease(tree, individual));
+
+		for (int i = tree.size(); i < configuration.getPopulationSize(); i++) {
+			Individual randomIndividual = generator.generateRandomIndividual(
+					gameState,
+					configuration.getNumberOfGenesPerIndividual());
+			processor.processIndividual(randomIndividual, gameState);
+			evaluator.evaluateIndividual(randomIndividual, pathToFollow, gameState);
+			addOrRelease(tree, randomIndividual);
+		}
 
 		List<Individual> sortedIndividuals = new ArrayList<>(tree);
 		int sortedIndividualsSize = sortedIndividuals.size();

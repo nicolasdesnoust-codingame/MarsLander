@@ -6,88 +6,107 @@ import java.util.Arrays;
 import java.util.Objects;
 
 public class Individual {
-    private Integer id;
-    private Gene[] genes;
-    private Capsule capsule;
-    private double evaluation;
-    private double normalizedEvaluation;
+	private Integer id;
+	private Gene[] genes;
+	private Capsule capsule;
+	private double evaluation;
+	private double normalizedEvaluation;
 
-    public Individual(int id, Gene[] genes) {
-        this.id = id;
-        this.genes = genes;
-        this.evaluation = 0.0;
-    }
+	public Individual(int id, Gene[] genes) {
+		this.id = id;
+		this.genes = genes;
+		this.evaluation = 0.0;
+	}
 
-    public double getNormalizedEvaluation() {
-        return normalizedEvaluation;
-    }
+	public Individual(Individual individual, int firstGeneIndex) {
+		this.id = individual.id;
+		int newGenesLength = individual.genes.length - firstGeneIndex;
+		this.genes = new Gene[individual.genes.length];
+		for (int i = 0; i < newGenesLength; i++) {
+			this.genes[i] = new Gene(individual.genes[i + firstGeneIndex]);
+		}
+		for (int i = newGenesLength; i < individual.genes.length; i++) {
+			this.genes[i] = new Gene();
+		}
+		this.capsule = new Capsule(individual.capsule);
+	}
 
-    public void setNormalizedEvaluation(double normalizedEvaluation) {
-        this.normalizedEvaluation = normalizedEvaluation;
-    }
+	public Individual(Gene[] genes) {
+		this.genes = genes;
+	}
 
-    public Individual(Gene[] genes) {
-        this.genes = genes;
-    }
+	public Individual(Individual individual) {
+		this.id = individual.id;
+		this.genes = new Gene[individual.genes.length];
+		for (int i = 0; i < individual.genes.length; i++) {
+			this.genes[i] = new Gene(individual.genes[i]);
+		}
+		this.capsule = new Capsule(individual.capsule);
+		this.evaluation = individual.evaluation;
+		this.normalizedEvaluation = individual.normalizedEvaluation;
+	}
 
-    public Individual(Individual individual) {
-        this.id = individual.id;
-        this.genes = new Gene[individual.genes.length];
-        for (int i = 0; i < individual.genes.length; i++) {
-            this.genes[i] = new Gene(individual.genes[i]);
-        }
-        this.capsule = new Capsule(individual.capsule);
-        this.evaluation = individual.evaluation;
-        this.normalizedEvaluation = individual.normalizedEvaluation;
-    }
+	public Individual() {
+	}
 
-    public Individual() {
-    }
+	public Integer getId() {
+		return id;
+	}
 
-    public Integer getId() {
-        return id;
-    }
+	public void setId(int id) {
+		this.id = id;
+	}
 
-    public void setId(int id) {
-        this.id = id;
-    }
+	public Gene[] getGenes() {
+		return genes;
+	}
 
-    public Gene[] getGenes() {
-        return genes;
-    }
+	public void setGenes(Gene[] genes) {
+		this.genes = genes;
+	}
 
-    public Capsule getCapsule() {
-        return capsule;
-    }
+	public Capsule getCapsule() {
+		return capsule;
+	}
 
-    public void setCapsule(Capsule capsule) {
-        this.capsule = capsule;
-    }
+	public void setCapsule(Capsule capsule) {
+		this.capsule = capsule;
+	}
 
-    public double getEvaluation() {
-        return evaluation;
-    }
+	public double getEvaluation() {
+		return evaluation;
+	}
 
-    public void setEvaluation(double evaluation) {
-        this.evaluation = evaluation;
-    }
+	public void setEvaluation(double evaluation) {
+		this.evaluation = evaluation;
+	}
+	
+	public double getNormalizedEvaluation() {
+		return normalizedEvaluation;
+	}
 
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Individual that = (Individual) o;
-        return id.equals(that.id);
-    }
+	public void setNormalizedEvaluation(double normalizedEvaluation) {
+		this.normalizedEvaluation = normalizedEvaluation;
+	}
 
-    public int hashCode() {
-        return Objects.hash(id);
-    }
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (o == null || getClass() != o.getClass())
+			return false;
+		Individual that = (Individual) o;
+		return id.equals(that.id);
+	}
 
-    public String toString() {
-        return "Individual{" +
-                "id=" + id +
-                ", genes=" + Arrays.toString(genes) +
-                ", evaluation=" + evaluation +
-                '}';
-    }
+	public int hashCode() {
+		return Objects.hash(id);
+	}
+
+	public String toString() {
+		return "Individual{" +
+				"id=" + id +
+				", genes=" + Arrays.toString(genes) +
+				", evaluation=" + evaluation +
+				'}';
+	}
 }

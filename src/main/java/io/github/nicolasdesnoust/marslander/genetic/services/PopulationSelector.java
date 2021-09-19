@@ -10,7 +10,7 @@ import io.github.nicolasdesnoust.marslander.genetic.model.Individual;
 import io.github.nicolasdesnoust.marslander.random.RandomNumbersGenerator;
 
 public class PopulationSelector {
-	private static final int MAXIMUM_SELECTION_ATTEMPTS = 500;
+	private static final int MAXIMUM_SELECTION_ATTEMPTS = 100;
 	private final List<Individual> reusableList;
 
 	public PopulationSelector() {

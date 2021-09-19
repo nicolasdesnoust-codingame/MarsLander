@@ -12,7 +12,8 @@ import io.github.nicolasdesnoust.marslander.genetic.model.Individual;
 import io.github.nicolasdesnoust.marslander.random.RandomNumbersGenerator;
 
 public class PopulationGenerator {
-	private static final int FIXED_ROTATE_COUNT = 40;
+	private static final int FIXED_ROTATE_COUNT = 100;
+
 	private final IndividualFactory individualFactory;
 
 	public PopulationGenerator(IndividualFactory individualFactory) {

@@ -38,7 +38,7 @@ public class PopulationEvaluator {
 		}
 	}
 
-	private void evaluateIndividual(
+	public void evaluateIndividual(
 			Individual individual,
 			List<Point> pathToFollow,
 			GameState initialGameState) {
@@ -51,12 +51,18 @@ public class PopulationEvaluator {
 
 		Capsule lastCapsule = individual.getCapsule();
 		List<Segment> marsSurface = initialGameState.getMars().getSurface();
-		if (capsuleService.isCapsuleRightAboveLandingArea(lastCapsule, marsSurface, landingArea)) {
+		if (capsuleService.isCapsuleRightAboveLandingArea(lastCapsule, marsSurface, landingArea)
+				&& lastCapsule.getLandingState().isTerminalState()) {
 			distanceRatio = 1.0;
-			speedRatio = computeSpeedRatio(individual);
-			rotateRatio = computeRotateRatio(individual);
-			if (speedRatio + rotateRatio >= 1.05) {
+			if (Math.abs(lastCapsule.gethSpeed()) <= CapsuleService.HORIZONTAL_SPEED_THRESHOLD
+					&& Math.abs(lastCapsule.getvSpeed()) <= CapsuleService.VERTICAL_SPEED_THRESHOLD
+					&& lastCapsule.getRotate() == ROTATE_THRESHOLD) {
+				speedRatio = 1;
+				rotateRatio = 0.05;
 				fuelRatio = computeFuelRatio(individual, initialGameState);
+			} else {
+				speedRatio = computeSpeedRatio(individual);
+				rotateRatio = computeRotateRatio(individual);
 			}
 		} else {
 			Capsule secondLastCapsule = new Capsule(lastCapsule);

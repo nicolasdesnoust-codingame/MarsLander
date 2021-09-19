@@ -75,7 +75,6 @@ public class SegmentChunks {
 		if (toXIndex < 7 && toXCoordinate == toXIndex * 1000) {
 			toXIndex++;
 		}
-		//fromXIndex = Math.min(fromXIndex, 0);
 		toXIndex = Math.min(toXIndex, 6);
 		
 		if (fromYIndex > 0 && fromYCoordinate == fromYIndex * 1000) {
@@ -84,7 +83,6 @@ public class SegmentChunks {
 		if (toYIndex < 3 && toYCoordinate == toYIndex * 1000) {
 			toYIndex++;
 		}
-		//fromYIndex = Math.min(fromYIndex, 0);
 		toYIndex = Math.min(toYIndex, 2);
 
 
