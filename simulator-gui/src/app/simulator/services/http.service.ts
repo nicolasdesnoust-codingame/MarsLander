@@ -33,14 +33,15 @@ export class HttpService {
   }
 
   getGeneration(generation: number): Observable<Individual[]> {
-    if (!this.cache.has(`generation-${generation}`)) {
-      this.cache.set(
-        `generation-${generation}`,
-        this.requestGeneration(generation).pipe(shareReplay(1))
-      );
-    }
+    // if (!this.cache.has(`generation-${generation}`)) {
+    //   this.cache.set(
+    //     `generation-${generation}`,
+    //     this.requestGeneration(generation).pipe(shareReplay(1))
+    //   );
+    // }
 
-    return this.cache.get(`generation-${generation}`);
+    // return this.cache.get(`generation-${generation}`);
+    return this.requestGeneration(generation).pipe(shareReplay(1));
   }
 
   private requestGeneration(generation: number): Observable<Individual[]> {

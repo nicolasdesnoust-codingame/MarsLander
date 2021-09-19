@@ -3,7 +3,6 @@ package io.github.nicolasdesnoust.marslander;
 public class SolverConfiguration {
     private String testCase;
     private int populationSize;
-    private int numberOfSelections;
     private int numberOfGenesPerIndividual;
 	private int restartGenericTurn;
 	private boolean restartGeneric;
@@ -19,12 +18,6 @@ public class SolverConfiguration {
 	}
 	public void setPopulationSize(int populationSize) {
 		this.populationSize = populationSize;
-	}
-	public int getNumberOfSelections() {
-		return numberOfSelections;
-	}
-	public void setNumberOfSelections(int numberOfSelections) {
-		this.numberOfSelections = numberOfSelections;
 	}
 	public int getNumberOfGenesPerIndividual() {
 		return numberOfGenesPerIndividual;

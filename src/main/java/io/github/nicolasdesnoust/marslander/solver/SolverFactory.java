@@ -15,11 +15,11 @@ import io.github.nicolasdesnoust.marslander.genetic.services.PopulationEvolver;
 import io.github.nicolasdesnoust.marslander.genetic.services.PopulationGenerator;
 import io.github.nicolasdesnoust.marslander.genetic.services.PopulationMutator;
 import io.github.nicolasdesnoust.marslander.genetic.services.PopulationSelector;
+import io.github.nicolasdesnoust.marslander.logs.CodingameIndividualLogger;
 import io.github.nicolasdesnoust.marslander.logs.IndividualLogger;
 import io.github.nicolasdesnoust.marslander.logs.LocalIndividualLogger;
 import io.github.nicolasdesnoust.marslander.solver.strategies.GeneticMovementStrategy;
 import io.github.nicolasdesnoust.marslander.solver.strategies.MovementStrategy;
-import io.github.nicolasdesnoust.marslander.solver.strategies.PidMovementStrategy;
 
 public class SolverFactory {
 
@@ -36,7 +36,7 @@ public class SolverFactory {
 		IndividualLogger individualLogger = new LocalIndividualLogger();
 
 		IndividualFactory individualFactory = new IndividualFactory(
-				configuration.getPopulationSize() * 2,
+				configuration.getPopulationSize() * 20,
 				configuration.getNumberOfGenesPerIndividual());
 		PopulationGenerator generator = new PopulationGenerator(individualFactory);
 		PopulationCrosser crosser = new PopulationCrosser(individualFactory);
@@ -53,20 +53,23 @@ public class SolverFactory {
 				evaluationNormalizer,
 				selector,
 				processor,
-				pathFinder,
-				individualLogger);
-		GeneticAlgorithm geneticAlgorithm = new GeneticAlgorithm(generator, evolver, processor);
+				pathFinder, 
+				generator);
+		GeneticAlgorithm geneticAlgorithm = new GeneticAlgorithm(
+				generator, 
+				evolver, 
+				processor, 
+				individualLogger, 
+				evaluator,
+				mutator);
+		
 		GeneticMovementStrategy geneticMovementStrategy = new GeneticMovementStrategy(configuration, geneticAlgorithm,
 				capsuleService, individualFactory);
-		PidMovementStrategy pidMovementStrategy = new PidMovementStrategy();
 		movementStrategies.put(GeneticMovementStrategy.STRATEGY_KEY, geneticMovementStrategy);
-		movementStrategies.put(PidMovementStrategy.STRATEGY_KEY, pidMovementStrategy);
-
 		return new Solver(
 				capsuleService,
 				gameStateParser,
-				movementStrategies,
-				configuration);
+				movementStrategies);
 	}
 
 }

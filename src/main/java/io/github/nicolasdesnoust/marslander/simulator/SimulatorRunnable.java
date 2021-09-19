@@ -18,6 +18,7 @@ import io.github.nicolasdesnoust.marslander.math.Segment;
 import io.github.nicolasdesnoust.marslander.solver.CapsuleService;
 import io.github.nicolasdesnoust.marslander.solver.MarsService;
 import io.github.nicolasdesnoust.marslander.solver.SegmentChunks;
+import io.github.nicolasdesnoust.marslander.solver.Solver;
 
 public class SimulatorRunnable implements Runnable {
 
@@ -67,6 +68,7 @@ public class SimulatorRunnable implements Runnable {
 			// kv("type", "real-capsule"),
 			// kv("capsule", state.getCapsule()));
 		}
+		log.info("Last capsule state: {}", state.getCapsule());
 	}
 
 	private void sendMarsSurfaceToSolver(PrintWriter out) {

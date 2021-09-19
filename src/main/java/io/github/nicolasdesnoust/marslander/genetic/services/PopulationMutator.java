@@ -23,7 +23,13 @@ public class PopulationMutator {
         for (int i = 0; i < genes.length; i++) {
             double randomDouble = RandomNumbersGenerator.generateRandomDoubleInRange(0, 1);
             if (randomDouble <= MUTATION_PROBABILITY) {
-                populationGenerator.updateGeneRandomly(genes[i]);
+//                populationGenerator.updateGeneRandomly(genes[i]);
+            	int randomPowerIncrement = RandomNumbersGenerator.generateRandomIntInRange(-1, 1);
+            	int randomRotateIncrement = RandomNumbersGenerator.generateRandomIntInRange(-5, 5);
+
+            	genes[i].setPowerIncrement(randomPowerIncrement);
+            	genes[i].setRotateIncrement(
+            			Math.min(Math.max(genes[i].getRotateIncrement() + randomRotateIncrement, -15), 15));
             }
         }
     }

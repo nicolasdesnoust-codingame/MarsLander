@@ -131,8 +131,10 @@ export class SimulatorComponent implements OnInit, OnDestroy {
   }
 
   animate() {
+    console.log(this.generationPrinted + '  ' + this.currentGeneration);
     if (this.generationPrinted != this.currentGeneration) {
       this.printCurrentGeneration();
+      this.generationPrinted = this.currentGeneration;
     }
   }
 
@@ -155,27 +157,47 @@ export class SimulatorComponent implements OnInit, OnDestroy {
     });
   }
 
+  generationContainer: PIXI.Container;
+
   private loadCurrentGeneration() {
+    if(this.generationContainer)
+      this.app.stage.removeChild(this.generationContainer);
+    this.generationContainer = this.shapeDrawer.getGenerationContainer(this.currentGeneration);
+    if(this.generationContainer) {
+      this.app.stage.addChild(this.generationContainer);
+    } else {
+      this.httpService
+      .getGeneration(this.currentGeneration)
+      .subscribe((generation) => {
+        this.shapeDrawer.drawGeneration(generation, this.currentGeneration);
+      });
+    }
+
+    for(let i = 1; i <= 5; i++) {
+      if(!this.shapeDrawer.getGenerationContainer(this.currentGeneration + i)) {
+        this.httpService
+        .getGeneration(this.currentGeneration + i)
+        .subscribe((generation) => {
+          this.shapeDrawer.drawGeneration(generation, this.currentGeneration + i);
+        });
+      }
+    }
+
     this.httpService
       .getGeneration(this.currentGeneration)
       .subscribe((generation) => {
-        this.currentBestSolutions = generation.slice(0, 6);
-        const otherSolutions = generation.slice(6, generation.length);
+        const sum = generation.reduce(
+          (sum, individual) => sum + individual.evaluation,
+          0
+        );
+        const avgEvaluation = sum / generation.length;
+        const bestEvaluation = generation[0].evaluation;
+        console.log('avgEvaluation: ' + avgEvaluation);
+        console.log('bestEvaluation: ' + bestEvaluation);
+        console.log('ratio: ' + avgEvaluation / bestEvaluation);
+        console.log('popSize: ' + generation.length);
 
-        otherSolutions.forEach((individual) =>
-          this.shapeDrawer.drawPath(
-            this.graphics,
-            individual.capsules,
-            0xedf2f4
-          )
-        );
-        this.currentBestSolutions.forEach((individual) =>
-          this.shapeDrawer.drawPath(
-            this.graphics,
-            individual.capsules,
-            0xffcc00
-          )
-        );
+        this.currentBestSolutions = generation.slice(0, 6);
       });
   }
 }

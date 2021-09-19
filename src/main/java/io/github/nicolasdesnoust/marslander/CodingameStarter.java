@@ -11,8 +11,7 @@ public class CodingameStarter {
     public void solve(int testNumber, Scanner in, PrintWriter out) {
         Timer.startFirstTurnTimer();
         SolverConfiguration configuration = new SolverConfiguration();
-        configuration.setNumberOfGenesPerIndividual(85);
-        configuration.setNumberOfSelections(60);
+        configuration.setNumberOfGenesPerIndividual(90);
         configuration.setPopulationSize(140);
         configuration.setRestartGeneric(true);
         configuration.setRestartGenericTurn(15);

@@ -1,13 +1,46 @@
 import { Injectable } from '@angular/core';
+import { Container, Graphics, System } from 'pixi.js';
+import { Individual } from '../model/individual';
 import { Point } from '../model/point';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ShapeDrawer {
+  private generations: Map<number, Container> = new Map();
 
   widthRatio: number;
   heightRatio: number;
+
+  getGenerationContainer(generationIndex: number) {
+    return this.generations.get(generationIndex);
+  }
+
+  drawGeneration(
+    generation: Individual[],
+    generationIndex: number
+  ) {
+    const generationContainer = new Container();
+
+    const bestSolutions = generation.slice(0, 6);
+    const otherSolutions = generation.slice(6, generation.length);
+
+    otherSolutions.forEach((individual) => {
+      const individualPath = new Graphics();
+      this.drawPath(individualPath, individual.capsules, 0xedf2f4);
+      generationContainer.addChild(individualPath);
+    });
+    bestSolutions.forEach((individual) => {
+      const individualPath = new Graphics();
+      this.drawPath(individualPath, individual.capsules, 0xffcc00);
+      generationContainer.addChild(individualPath);
+    });
+
+    this.generations.set(generationIndex, generationContainer);
+    console.log(
+      `generation ${generationIndex} done. ${generationContainer.children.length}`
+    );
+  }
 
   drawPath(graphics: any, points: Point[], color: number) {
     graphics

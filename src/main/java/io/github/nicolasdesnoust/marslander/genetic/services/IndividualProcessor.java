@@ -14,7 +14,7 @@ public class IndividualProcessor {
 	private final IndividualLogger individualLogger;
 
 	public IndividualProcessor(
-			CapsuleService capsuleService, 
+			CapsuleService capsuleService,
 			IndividualLogger individualLogger) {
 		this.capsuleService = capsuleService;
 		this.individualLogger = individualLogger;
@@ -24,12 +24,12 @@ public class IndividualProcessor {
 		population.forEach(individual -> processIndividual(individual, initialGameState));
 	}
 
-	private void processIndividual(
+	public void processIndividual(
 			Individual individual,
 			GameState initialGameState) {
 
 		Capsule capsuleCopy = new Capsule(initialGameState.getCapsule());
-		
+
 		individualLogger.storeIndividual(individual);
 
 		Gene[] genes = individual.getGenes();
@@ -41,12 +41,65 @@ public class IndividualProcessor {
 			capsuleService.updateCapsuleState(capsuleCopy, requestedRotate, requestedPower, initialGameState);
 
 			individualLogger.storeCapsuleOf(individual.getId(), capsuleCopy);
-			
+
 			if (capsuleCopy.getLandingState().isTerminalState()) {
 				break;
 			}
 		}
 		individual.setCapsule(capsuleCopy);
 	}
+
+	/**
+	 * Met à jour les gènes fournis de sorte à ce qu'ils mènent à un angle de
+	 * rotation de 0.
+	 */
+//	private int patchLandingRotate(int landingRotate, Gene[] genes, int terminalStateIndex) {
+//		int totalGain = 0;
+//		int currentGeneIndex = terminalStateIndex;
+//
+//		while (landingRotate - totalGain != 0) {
+//			Gene currentGene = genes[currentGeneIndex];
+//
+//			int oldRotateIncrement = currentGene.getRotateIncrement();
+//			int newRotateIncrement = findBestRotateIncrement(landingRotate - totalGain);
+//
+//			int localGain = toGain(oldRotateIncrement, newRotateIncrement);
+//			currentGene.setRotateIncrement(newRotateIncrement);
+//
+//			currentGeneIndex--;
+//			totalGain += localGain;
+//		}
+//		
+//		// retourner l'indice du gène jusqu'au quel le patching a du remonter dans le tableau.
+//		// L'état de la capsule pourra etre mis à jour en conséquence.
+//	}
+
+	/**
+	 * oldRotateIncrement = 10 newRotateIncrement = -15 lastRotate = 90
+	 * 
+	 * -15 - 10 = -25 -> abs(-25)
+	 *
+	 * oldRotateIncrement = -10 newRotateIncrement = 15 lastRotate = -90
+	 * 
+	 * 15 - -10 = 25 -> abs(25)
+	 * 
+	 */
+//	private int toGain(int oldRotateIncrement, int newRotateIncrement) {
+//		return Math.abs(newRotateIncrement - oldRotateIncrement);
+//	}
+
+	/**
+	 * Cherche l'incrément compris dans [-15; 15] qui permet de rapprocher le plus
+	 * possible de 0 l'angle de rotation donné.
+	 */
+//	private int findBestRotateIncrement(int rotate) {
+//		if (rotate > 0) {
+//			return Math.max(-15, -rotate);
+//		} else if (rotate < 0) {
+//			return Math.max(15, -rotate);
+//		} else {
+//			return 0;
+//		}
+//	}
 
 }
